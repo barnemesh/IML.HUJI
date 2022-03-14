@@ -54,14 +54,43 @@ def test_multivariate_gaussian():
     print(multi.mu_)
     print(multi.cov_)
 
+    # figure2 = px.density_heatmap(x=samples[:, 1], y=samples[:, 2], z=multi.pdf(samples),
+    #                              labels=dict(x="0 col", y="2 col", z="pdf"))
+
+    # figure2 = go.Figure(data=
+    #                     go.Contour(x=samples[:, 1], y=samples[:, 2], z=multi.pdf(samples))
+    #                     )
+    # figure2.show()
+    # plotly.offline.plot(figure2, filename="temp-plot-multi.html")
+
     # Question 5 - Likelihood evaluation
-    raise NotImplementedError()
+    values_for_mu = np.linspace(-10, 10, 200)
+    rep = np.repeat(values_for_mu, len(values_for_mu))
+    pairs_f1_f3 = np.transpose(
+        np.array([np.repeat(values_for_mu, len(values_for_mu)),
+                  np.zeros(len(rep)),
+                  np.tile(values_for_mu, len(values_for_mu)),
+                  np.zeros(len(rep))
+                  ])
+    )
+    # zer = np.zeros(200)
+    # pairs_f1_f3 = np.transpose(np.stack([values_for_mu, zer, values_for_mu, zer]))
+    print(pairs_f1_f3)
+    multi_loglikely = lambda m: MultivariateGaussian.log_likelihood(m, sigma, samples)
+    log_likelihoods = np.apply_along_axis(multi_loglikely, 1, pairs_f1_f3)
+
+    figure2 = px.density_heatmap(x=pairs_f1_f3[:, 0], y=pairs_f1_f3[:, 2], z=log_likelihoods,
+                                 labels=dict(x="value of f1", y="value of f3", z="calculated log-likelihood"),
+                                 title="Log-likelihood using mu = [f1,0,f3,0]^T as expectation",
+                                 )
+    # figure2.show()
+    plotly.offline.plot(figure2, filename="temp-plot-multi.html")
 
     # Question 6 - Maximum likelihood
-    raise NotImplementedError()
+    print(pairs_f1_f3[np.argmax(log_likelihoods), [0,2]])
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    test_univariate_gaussian()
+    # test_univariate_gaussian()
     test_multivariate_gaussian()
