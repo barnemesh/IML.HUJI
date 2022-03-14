@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from math import sqrt, exp
+
 import numpy as np
 from numpy.linalg import inv, det, slogdet
 
@@ -7,6 +10,7 @@ class UnivariateGaussian:
     """
     Class for univariate Gaussian Distribution Estimator
     """
+
     def __init__(self, biased_var: bool = False) -> UnivariateGaussian:
         """
         Estimator for univariate Gaussian mean and variance parameters
@@ -51,7 +55,13 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        self.mu_ = np.mean(X)
+        variance_estimator = lambda x: (x - self.mu_) ** 2
+
+        if not self.biased_:
+            self.var_ = np.sum(variance_estimator(X)) / (len(X) - 1)
+        else:
+            self.var_ = np.sum(variance_estimator(X)) / len(X)
 
         self.fitted_ = True
         return self
@@ -76,7 +86,10 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+
+        gaussian_pdf = lambda x: np.exp(-((x - self.mu_) ** 2) / (2 * self.var_)) / np.sqrt(2 * np.pi * self.var_)
+
+        return gaussian_pdf(X)
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -97,13 +110,16 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+        log_likelihood = lambda x: -((x - mu) ** 2)
+
+        return -np.sum(log_likelihood(X)) / (2 * (sigma ** 2))
 
 
 class MultivariateGaussian:
     """
     Class for multivariate Gaussian Distribution Estimator
     """
+
     def __init__(self):
         """
         Initialize an instance of multivariate Gaussian estimator
@@ -143,7 +159,15 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        n_samples, n_features = X.shape
+
+        uni = UnivariateGaussian()
+        get_univariate_mu = lambda x: uni.fit(x).mu_
+
+        self.mu_ = np.apply_along_axis(get_univariate_mu, 0, X)
+
+        x_hat = X - self.mu_
+        self.cov_ = (x_hat.T @ x_hat) / (n_samples - 1)
 
         self.fitted_ = True
         return self
