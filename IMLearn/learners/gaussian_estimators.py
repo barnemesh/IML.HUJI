@@ -113,7 +113,7 @@ class UnivariateGaussian:
         """
         def log_likelihood(x):
             return (x - mu) ** 2
-        return -np.sum(log_likelihood(X))
+        return -np.sum(log_likelihood(X)) / sigma  # TODO: divide by sigma?
 
 
 class MultivariateGaussian:
@@ -165,10 +165,9 @@ class MultivariateGaussian:
         # get_univariate_mu = lambda x: uni.fit(x).mu_
         # self.mu_ = np.apply_along_axis(get_univariate_mu, 0, X)
         #
-        #
         # x_hat = X - self.mu_
         # self.cov_ = (x_hat.T @ x_hat) / (n_samples - 1)
-        self.cov_ = np.cov(X, ddof=1)
+        self.cov_ = np.cov(X.T, ddof=1)
         self.mu_ = np.mean(X, axis=0)
 
         self.fitted_ = True
@@ -196,12 +195,12 @@ class MultivariateGaussian:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
 
         n_samples, n_features = X.shape
-        det_cov = np.linalg.det(self.cov_)
+        cov_det = np.linalg.det(self.cov_)
         cov_inv = np.linalg.inv(self.cov_)
 
         def multi_var_gaussian_pdf(x):
             return np.exp(-((x - self.mu_).T @ cov_inv @ (x - self.mu_)) / 2) \
-                   / np.sqrt(det_cov * (2 * np.pi) ** n_features)
+                   / np.sqrt(cov_det * (2 * np.pi) ** n_features)
 
         return np.apply_along_axis(multi_var_gaussian_pdf, 0, X.T)
 

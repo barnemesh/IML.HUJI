@@ -70,8 +70,9 @@ def test_multivariate_gaussian():
     # zer = np.zeros(200)
     # pairs_f1_f3 = np.transpose(np.stack([values_for_mu, zer, values_for_mu, zer]))
 
-    multi_loglikely = lambda m: MultivariateGaussian.log_likelihood(m, sigma,
-                                                                    samples)
+    def multi_loglikely(m):
+        return MultivariateGaussian.log_likelihood(m, sigma, samples)
+
     log_likelihoods = np.apply_along_axis(multi_loglikely, 1, pairs_f1_f3)
 
     figure2 = px.density_heatmap(x=pairs_f1_f3[:, 0], y=pairs_f1_f3[:, 2],
