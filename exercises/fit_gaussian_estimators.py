@@ -55,13 +55,6 @@ def test_multivariate_gaussian():
     print(multi.mu_)
     print(multi.cov_)
 
-    # figure2 = px.density_heatmap(x=samples[:, 1], y=samples[:, 2], z=multi.pdf(samples),
-    #                              labels=dict(x="0 col", y="2 col", z="pdf"))
-
-    # figure2 = go.Figure(data=
-    #                     go.Contour(x=samples[:, 1], y=samples[:, 2], z=multi.pdf(samples))
-    #                     )
-    # figure2.show()
     # plotly.offline.plot(figure2, filename="temp-plot-multi.html")
 
     # Question 5 - Likelihood evaluation
@@ -86,6 +79,8 @@ def test_multivariate_gaussian():
                                  labels=dict(x="value of f1", y="value of f3",
                                              z="calculated log-likelihood"),
                                  title="Log-likelihood using mu = [f1,0,f3,0]^T as expectation",
+                                 histfunc="avg",
+                                 histnorm="density"
                                  )
     figure2.show()
     # plotly.offline.plot(figure2, filename="temp-plot-multi.html")
