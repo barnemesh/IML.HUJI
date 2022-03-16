@@ -111,9 +111,11 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
+
         def log_likelihood(x):
             return (x - mu) ** 2
-        return -np.sum(log_likelihood(X)) / sigma  # TODO: divide by sigma?
+
+        return -X.shape[0] * np.log(sigma) - np.sum(log_likelihood(X)) / sigma
 
 
 class MultivariateGaussian:
@@ -160,13 +162,6 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        # n_samples, n_features = X.shape
-        # uni = UnivariateGaussian()
-        # get_univariate_mu = lambda x: uni.fit(x).mu_
-        # self.mu_ = np.apply_along_axis(get_univariate_mu, 0, X)
-        #
-        # x_hat = X - self.mu_
-        # self.cov_ = (x_hat.T @ x_hat) / (n_samples - 1)
         self.cov_ = np.cov(X.T, ddof=1)
         self.mu_ = np.mean(X, axis=0)
 
@@ -223,6 +218,9 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
+        inv_cov = np.linalg.inv(cov)
+
         def log_likelihood(x):
-            return (x - mu).T @ np.linalg.inv(cov) @ (x - mu)
-        return -np.sum(np.apply_along_axis(log_likelihood, 0, X.T))
+            return (x - mu).T @ inv_cov @ (x - mu)
+
+        return -X.shape[0] * np.log(np.linalg.det(cov)) - np.sum(np.apply_along_axis(log_likelihood, 0, X.T))
