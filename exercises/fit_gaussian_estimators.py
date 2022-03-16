@@ -76,16 +76,17 @@ def test_multivariate_gaussian():
     fig = go.Figure(
         go.Heatmap(y=pairs_f1_f3[:, 0],
                    x=pairs_f1_f3[:, 2],
-                   z=log_likelihoods
+                   z=log_likelihoods,
+                   colorbar={"title": "Value of Log-Likelihood"}
                    )
     )
     fig.update_layout(
-        title="Log-likelihood using mu = [f1,0,f3,0]^T as expectation",
+        title="Log-likelihood using mu=[f1,0,f3,0]^T as expectation, sampled from [-10,10]",
         yaxis_title="value of f1",
         xaxis_title="value of f3",
-        legend_title="calculated log-likelihood"
     )
     fig.show()
+    plotly.offline.plot(fig, filename="first.html")
 
     figure2 = px.density_heatmap(y=pairs_f1_f3[:, 0],
                                  x=pairs_f1_f3[:, 2],
@@ -97,13 +98,13 @@ def test_multivariate_gaussian():
                                  histnorm="density"
                                  )
     figure2.show()
-
+    plotly.offline.plot(figure2, filename="second.html")
     # Question 6 - Maximum likelihood
     mle_index = np.argmax(log_likelihoods)
     print("f1: {:.3f} , f3: {:.3f}".format(
         *pairs_f1_f3[mle_index, [0, 2]])
     )
-    print(f"MLE: {log_likelihoods[mle_index]}")
+    print(f"Log-Likelihood: {log_likelihoods[mle_index]:.3f}")
 
 
 if __name__ == '__main__':

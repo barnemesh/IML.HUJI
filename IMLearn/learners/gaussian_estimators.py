@@ -86,11 +86,7 @@ class UnivariateGaussian:
             raise ValueError(
                 "Estimator must first be fitted before calling `pdf` function")
 
-        def univariate_gaussian_pdf(x):
-            return np.exp(-((x - self.mu_) ** 2) / (2 * self.var_)) \
-                   / np.sqrt(2 * np.pi * self.var_)
-
-        return univariate_gaussian_pdf(X)
+        return np.exp(-((X - self.mu_) ** 2) / (2 * self.var_)) / np.sqrt(2 * np.pi * self.var_)
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -111,11 +107,11 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-
-        def log_likelihood(x):
-            return (x - mu) ** 2
-
-        return -X.shape[0] * np.log(sigma) - np.sum(log_likelihood(X)) / sigma
+        # As mentioned in the forum: we can ignore the constants, to get an
+        # easier to calculate estimator:
+        # return -X.shape[0] * np.log(sigma) - np.sum((X - mu) ** 2) / sigma
+        # The "Real" full log-likelihood:
+        return (-X.shape[0] / 2) * np.log(2 * np.pi * sigma) - np.sum((X - mu) ** 2) / (2 * sigma)
 
 
 class MultivariateGaussian:
@@ -219,8 +215,15 @@ class MultivariateGaussian:
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
         inv_cov = np.linalg.inv(cov)
+        n_samples, n_features = X.shape
 
         def log_likelihood(x):
             return (x - mu).T @ inv_cov @ (x - mu)
 
-        return -X.shape[0] * np.log(np.linalg.det(cov)) - np.sum(np.apply_along_axis(log_likelihood, 0, X.T))
+        # As mentioned in the forum: we can ignore the constants, to get an
+        # easier to calculate estimator:
+        # return -n_samples * np.log(np.linalg.det(cov)) - np.sum(np.apply_along_axis(log_likelihood, 0, X.T))
+        # The "Real" full log-likelihood:
+        return (-n_samples / 2) * np.log(
+            ((2 * np.pi) ** n_features) * np.linalg.det(cov)) - np.sum(
+            np.apply_along_axis(log_likelihood, 0, X.T)) / 2
