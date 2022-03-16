@@ -1,12 +1,13 @@
 import numpy.random
-import plotly.offline
 
 from IMLearn.learners import UnivariateGaussian, MultivariateGaussian
 import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
-
 import plotly.express as px
+
+# import plotly.offline
+# import time
 
 pio.templates.default = "simple_white"
 
@@ -71,7 +72,11 @@ def test_multivariate_gaussian():
     def multi_loglikely(m):
         return MultivariateGaussian.log_likelihood(m, sigma, samples)
 
+    # start = time.time()
+    # print("hello")
     log_likelihoods = np.apply_along_axis(multi_loglikely, 1, pairs_f1_f3)
+    # end = time.time()
+    # print(end - start)
 
     fig = go.Figure(
         go.Heatmap(y=pairs_f1_f3[:, 0],
@@ -86,7 +91,7 @@ def test_multivariate_gaussian():
         xaxis_title="value of f3",
     )
     fig.show()
-    plotly.offline.plot(fig, filename="first.html")
+    # plotly.offline.plot(fig, filename="first.html")
 
     figure2 = px.density_heatmap(y=pairs_f1_f3[:, 0],
                                  x=pairs_f1_f3[:, 2],
@@ -98,7 +103,7 @@ def test_multivariate_gaussian():
                                  histnorm="density"
                                  )
     figure2.show()
-    plotly.offline.plot(figure2, filename="second.html")
+    # plotly.offline.plot(figure2, filename="second.html")
     # Question 6 - Maximum likelihood
     mle_index = np.argmax(log_likelihoods)
     print("f1: {:.3f} , f3: {:.3f}".format(

@@ -86,7 +86,8 @@ class UnivariateGaussian:
             raise ValueError(
                 "Estimator must first be fitted before calling `pdf` function")
 
-        return np.exp(-((X - self.mu_) ** 2) / (2 * self.var_)) / np.sqrt(2 * np.pi * self.var_)
+        return np.exp(-((X - self.mu_) ** 2) / (2 * self.var_)) / np.sqrt(
+            2 * np.pi * self.var_)
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -111,7 +112,8 @@ class UnivariateGaussian:
         # easier to calculate estimator:
         # return -X.shape[0] * np.log(sigma) - np.sum((X - mu) ** 2) / sigma
         # The "Real" full log-likelihood:
-        return (-X.shape[0] / 2) * np.log(2 * np.pi * sigma) - np.sum((X - mu) ** 2) / (2 * sigma)
+        return (-X.shape[0] / 2) * np.log(2 * np.pi * sigma) - np.sum(
+            (X - mu) ** 2) / (2 * sigma)
 
 
 class MultivariateGaussian:
@@ -183,7 +185,8 @@ class MultivariateGaussian:
         ValueError: In case function was called prior fitting the model
         """
         if not self.fitted_:
-            raise ValueError("Estimator must first be fitted before calling `pdf` function")
+            raise ValueError(
+                "Estimator must first be fitted before calling `pdf` function")
 
         n_samples, n_features = X.shape
         cov_det = np.linalg.det(self.cov_)
@@ -196,7 +199,8 @@ class MultivariateGaussian:
         return np.apply_along_axis(multi_var_gaussian_pdf, 0, X.T)
 
     @staticmethod
-    def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
+    def log_likelihood(mu: np.ndarray, cov: np.ndarray,
+                       X: np.ndarray) -> float:
         """
         Calculate the log-likelihood of the data under a specified Gaussian model
 
@@ -218,7 +222,8 @@ class MultivariateGaussian:
         n_samples, n_features = X.shape
 
         def log_likelihood(x):
-            return (x - mu).T @ inv_cov @ (x - mu)
+            return (x - mu) @ inv_cov @ (x - mu)
+            # return np.sum((x - mu) @ inv_cov * (x - mu))
 
         # As mentioned in the forum: we can ignore the constants, to get an
         # easier to calculate estimator:
