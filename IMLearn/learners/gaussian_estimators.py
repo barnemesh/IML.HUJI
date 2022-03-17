@@ -196,6 +196,7 @@ class MultivariateGaussian:
             return np.exp(-((x - self.mu_).T @ cov_inv @ (x - self.mu_)) / 2) \
                    / np.sqrt(cov_det * (2 * np.pi) ** n_features)
 
+        # # TODO: vectorize?
         return np.apply_along_axis(multi_var_gaussian_pdf, 0, X.T)
 
     @staticmethod
@@ -220,15 +221,6 @@ class MultivariateGaussian:
         """
         inv_cov = np.linalg.inv(cov)
         n_samples, n_features = X.shape
-
-        def log_likelihood(x):
-            return (x - mu) @ inv_cov @ (x - mu)
-            # return np.sum((x - mu) @ inv_cov * (x - mu))
-
-        # As mentioned in the forum: we can ignore the constants, to get an
-        # easier to calculate estimator:
-        # return -n_samples * np.log(np.linalg.det(cov)) - np.sum(np.apply_along_axis(log_likelihood, 0, X.T))
-        # The "Real" full log-likelihood:
         return (-n_samples / 2) * np.log(
             ((2 * np.pi) ** n_features) * np.linalg.det(cov)) - np.sum(
-            np.apply_along_axis(log_likelihood, 0, X.T)) / 2
+            (X - mu) @ inv_cov * (X - mu)) / 2
