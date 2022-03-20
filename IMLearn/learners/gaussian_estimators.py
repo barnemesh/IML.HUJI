@@ -192,12 +192,9 @@ class MultivariateGaussian:
         cov_det = np.linalg.det(self.cov_)
         cov_inv = np.linalg.inv(self.cov_)
 
-        def multi_var_gaussian_pdf(x):
-            return np.exp(-((x - self.mu_).T @ cov_inv @ (x - self.mu_)) / 2) \
-                   / np.sqrt(cov_det * (2 * np.pi) ** n_features)
-
-        # # TODO: vectorize?
-        return np.apply_along_axis(multi_var_gaussian_pdf, 0, X.T)
+        return np.exp(
+            np.sum(-((X - self.mu_) @ cov_inv * (X - self.mu_)), axis=1) / 2) / np.sqrt(
+            cov_det * (2 * np.pi) ** n_features)
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray,
