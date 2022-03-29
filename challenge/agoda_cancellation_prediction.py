@@ -2,6 +2,7 @@ from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 # from IMLearn.base import BaseEstimator
 from IMLearn.utils import split_train_test
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -29,34 +30,63 @@ def load_data(filename: str):
                                          "checkin_date",
                                          "checkout_date",
                                          "hotel_live_date"]).drop_duplicates()
-    full_data["cancellation_datetime"] = full_data["cancellation_datetime"].map(dt.datetime.toordinal).fillna(0)
+    full_data["cancellation_datetime"] = full_data["cancellation_datetime"].notna()
+    full_data.dropna()
     full_data["booking_datetime"] = full_data["booking_datetime"].map(dt.datetime.toordinal).fillna(0)
     full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal).fillna(0)
     full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal).fillna(0)
     full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal).fillna(0)
-    # full_data = full_data.drop(["hotel_country_code",
-    #                            "accommadation_type_name",
-    #                            "cancellation_policy_code",
-    #                            "charge_option",
-    #                            "customer_nationality",
-    #                            "guest_nationality_country_name",
-    #                            "language",
-    #                            "origin_country_code",
-    #                            "original_payment_type",
-    #                            "original_payment_method",
-    #                            "original_payment_type",
-    #                            "original_payment_currency"
-    #                            ], axis=1)
-    full_data = full_data[["cancellation_datetime",
-                           "booking_datetime",
-                           "checkin_date",
-                           "checkout_date",
-                           "hotel_live_date",
-                           "is_first_booking"]]
-    features = full_data.dropna(axis='columns').drop(["cancellation_datetime"], axis=1)
+    features = full_data.drop(["hotel_country_code",
+                               "accommadation_type_name",
+                               "cancellation_policy_code",
+                               "charge_option",
+                               "customer_nationality",
+                               "guest_nationality_country_name",
+                               "language",
+                               "origin_country_code",
+                               "original_payment_type",
+                               "original_payment_method",
+                               "original_payment_type",
+                               "original_payment_currency"
+                               ], axis=1)
+    # features = full_data[[
+    #     "booking_datetime",
+    #     "checkin_date",
+    #     "checkout_date",
+    #     "hotel_live_date",
+    #     "is_first_booking",
+    #     "hotel_star_rating",
+    #     "no_of_ad"]]
     labels = full_data["cancellation_datetime"]
 
     return features, labels
+
+
+def load_test(filename: str):
+    full_data = pd.read_csv(filename,
+                            parse_dates=["booking_datetime",
+                                         "checkin_date",
+                                         "checkout_date",
+                                         "hotel_live_date"]).drop_duplicates()
+    full_data.dropna()
+    full_data["booking_datetime"] = full_data["booking_datetime"].map(dt.datetime.toordinal).fillna(0)
+    full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal).fillna(0)
+    full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal).fillna(0)
+    full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal).fillna(0)
+    features = full_data.drop(["hotel_country_code",
+                               "accommadation_type_name",
+                               "cancellation_policy_code",
+                               "charge_option",
+                               "customer_nationality",
+                               "guest_nationality_country_name",
+                               "language",
+                               "origin_country_code",
+                               "original_payment_type",
+                               "original_payment_method",
+                               "original_payment_type",
+                               "original_payment_currency"
+                               ], axis=1)
+    return features
 
 
 def evaluate_and_export(estimator  #: BaseEstimator,
@@ -86,16 +116,23 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
-    df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
-    # train_X, train_y, test_X, test_y = split_train_test(df, cancellation_labels)
+    df, responses = load_data("../datasets/agoda_cancellation_train.csv")
+    train_X, train_y, test_X, test_y = split_train_test(df, responses)
 
     # Fit model over data
     # estimator = AgodaCancellationEstimator().fit(train_X, train_y)
-    rows = len(df.index)
-    head = 100
     model = LogisticRegression(max_iter=1000)
-    estimator = model.fit(df.head(head), cancellation_labels.head(head))
-    model.predict()
+    estimator = model.fit(train_X, train_y)
+    predictions = model.predict(test_X)
+    acc = predictions == test_y
+    print(acc.value_counts())
+    print(accuracy_score(test_y, predictions))
+
+    std_y = np.std(responses)
+    for name, values in df.items():
+        array = values.to_numpy()
+        p_cor = np.cov(array, responses)[0, 1] / (np.std(array) * std_y)
+        print(p_cor)
     # Store model predictions over test set
-    # evaluate_and_export(estimator, test_X, "id1_id2_id3.csv")
-    evaluate_and_export(estimator, df.tail(rows - head), "id1_id2_id3.csv")
+    real = load_test("../datasets/test_set_week_1.csv")
+    evaluate_and_export(estimator, real, "id1_id2_id3.csv")
