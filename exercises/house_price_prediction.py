@@ -38,6 +38,9 @@ def load_data(filename: str):
     # full_data = full_data.drop(
     #     full_data[(full_data["bedrooms"] == 0) & (full_data["bathrooms"] == 0)].index
     # )
+    # full_data.drop(
+    #     full_data[(full_data["bedrooms"] > 30)].index
+    # )
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
         ["price",
@@ -53,6 +56,10 @@ def load_data(filename: str):
          # "yr_built",  # low pearson
          "zipcode",  # low pearson - categorical
          # "yr_renovated",  # low pearson - even with preprocess?
+         # "condition",  # low p
+         # "sqft_basement", # low p
+         # "view",  # low p
+         # "waterfront",  # low p
          ],
         axis=1)
     )
@@ -126,7 +133,7 @@ if __name__ == '__main__':
 
         mean_loss_array[i - 10], std_loss_array[i - 10] = \
             np.mean(losses, axis=0), np.std(losses, axis=0)
-    print(r2_score(test_y, model.predict(test_X)))  # TODO: REMOVE
+    # print(r2_score(test_y, model.predict(test_X)))  # TODO: REMOVE
     fig = go.Figure(
         data=[
             go.Scatter(
