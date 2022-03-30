@@ -31,8 +31,13 @@ def load_data(filename: str):
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
         ["price",
-         "id",
-         "date"
+         "id",   # low p
+         "date",  # unclear preprocess
+         "long",  # low pearson
+         "sqft_lot",  # low pearson
+         "sqft_lot15",  # low pearson
+         # "year_built", # low pearson
+         # "zipcode"  # low pearson - categorical
          ],
         axis=1)
     )
@@ -75,7 +80,6 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-
     features, responses = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
@@ -91,9 +95,47 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+    test_X, test_y = test_X.to_numpy(), test_y.to_numpy()
     model = LinearRegression()
-    mean_loss_array = np.zeros(90)
+    p_arr = np.arange(10, 101)
+    mean_loss_array = np.zeros(91)
+    std_loss_array = np.zeros(91)
     for i in range(10, 101):
-        train_X, train_y, test_X, test_y = split_train_test(features, responses, i / 100)
+        losses = []
+        for _ in range(10):
+            ipX_train, ipy_train, ipX_test, ipy_test = \
+                split_train_test(train_X, train_y, i / 100)
+            ipX_train, ipy_train = ipX_train.to_numpy(), ipy_train.to_numpy()
+            losses.append(model.fit(ipX_train, ipy_train).loss(test_X, test_y))
 
-        model.fit()
+        mean_loss_array[i - 10], std_loss_array[i - 10] = \
+            np.mean(losses, axis=0), np.var(losses, axis=0)
+
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array,
+                name="Mean loss",
+                mode="markers+lines",
+                line=dict(dash="dash"),
+                marker=dict(color="green", opacity=.7)
+            ),
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array - 2 * std_loss_array,
+                name="confidence",
+                fill=None, mode="lines",
+                line=dict(color="lightgrey"),
+                showlegend=False),
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array + 2 * std_loss_array,
+                name="confidence",
+                fill='tonexty',
+                mode="lines",
+                line=dict(color="lightgrey"),
+                showlegend=False)],
+        layout=go.Layout(title="Mean loss as function of p% of the training set")
+    )
+    fig.show()
