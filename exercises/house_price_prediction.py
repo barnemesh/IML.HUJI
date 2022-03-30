@@ -1,3 +1,5 @@
+import pandas
+
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
@@ -8,6 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
 import datetime as dt
+from sklearn.metrics import r2_score  # TODO remove
 
 pio.templates.default = "simple_white"
 
@@ -27,22 +30,31 @@ def load_data(filename: str):
     """
     full_data = pd.read_csv(filename).dropna().drop_duplicates()
     full_data.drop(full_data[full_data["price"] <= 0].index, inplace=True)
-    # full_data["date"] = full_data["date"].map(dt.datetime.toordinal).fillna(0)
+    full_data["year"] = pandas.to_numeric(full_data["date"].apply(lambda x: x[:4]))
+    full_data["month"] = pandas.to_numeric(full_data["date"].apply(lambda x: x[4:6]))
+    full_data["date"] = full_data["date"].apply(
+        lambda x: pd.to_datetime(x[:-7], format="%Y%m%d").value
+    )
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
         ["price",
+         "date",  # very low pearson, bad results.
+         "year",  # very low pearson, bad results.
+         "month", # very low pearson, bad results.
          "id",  # low p
-         "date",  # unclear preprocess
-         "long",  # low pearson
-         "sqft_lot",  # low pearson
-         "sqft_lot15",  # low pearson
-         "yr_built",  # low pearson
+         # "lat",   # low variance of data
+         "long",  # low variance of data, low pearson
+         # "floors", # low variance of data
+         # "sqft_lot",  # low pearson
+         # "sqft_lot15",  # low pearson
+         # "yr_built",  # low pearson
          "zipcode",  # low pearson - categorical
-         "yr_renovated"  # low pearson - even with preprocess?
+         # "yr_renovated",  # low pearson - even with preprocess?
          ],
         axis=1)
     )
-    # df["yr_renovated"].mask(df["yr_renovated"] <= 0, df["yr_built"], axis=0, inplace=True)
+    df["yr_renovated"].mask(df["yr_renovated"] <= df["yr_built"], df["yr_built"], axis=0, inplace=True)
+    # df = df.drop(["yr_built"], axis=1)
     return df, res_vector
 
 
@@ -111,7 +123,7 @@ if __name__ == '__main__':
 
         mean_loss_array[i - 10], std_loss_array[i - 10] = \
             np.mean(losses, axis=0), np.std(losses, axis=0)
-
+    # print(r2_score(test_y, model.predict(test_X)))
     fig = go.Figure(
         data=[
             go.Scatter(
@@ -140,3 +152,5 @@ if __name__ == '__main__':
         layout=go.Layout(title="Mean loss as function of p% of the training set")
     )
     fig.show()
+    # TODO: remove:
+    fig.write_image(f"./Plots/MeanLoss.png")
