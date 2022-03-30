@@ -31,17 +31,18 @@ def load_data(filename: str):
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
         ["price",
-         "id",   # low p
+         "id",  # low p
          "date",  # unclear preprocess
          "long",  # low pearson
          "sqft_lot",  # low pearson
          "sqft_lot15",  # low pearson
-         # "year_built", # low pearson
-         # "zipcode"  # low pearson - categorical
+         "yr_built",  # low pearson
+         "zipcode",  # low pearson - categorical
+         "yr_renovated"  # low pearson - even with preprocess?
          ],
         axis=1)
     )
-    df["yr_renovated"].mask(df["yr_renovated"] <= 0, df["yr_built"], axis=0, inplace=True)
+    # df["yr_renovated"].mask(df["yr_renovated"] <= 0, df["yr_built"], axis=0, inplace=True)
     return df, res_vector
 
 
@@ -109,7 +110,7 @@ if __name__ == '__main__':
             losses.append(model.fit(ipX_train, ipy_train).loss(test_X, test_y))
 
         mean_loss_array[i - 10], std_loss_array[i - 10] = \
-            np.mean(losses, axis=0), np.var(losses, axis=0)
+            np.mean(losses, axis=0), np.std(losses, axis=0)
 
     fig = go.Figure(
         data=[
