@@ -5,7 +5,7 @@ from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 from IMLearn.utils import split_train_test
 from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_curve, roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import numpy as np
@@ -215,8 +215,6 @@ if __name__ == '__main__':
     # estimator = pipe.fit(train_X, train_y)  # apply scaling on training data
     model.fit(train_X, train_y)
     predictions = model.predict(test_X)
-    print(model.score(test_X, test_y))
-
     std_y = np.std(responses)
     for name, values in df.items():
         array = values.to_numpy()
@@ -224,9 +222,12 @@ if __name__ == '__main__':
         print(f"{name} : {p_cor}")
 
     print("coef:")
-
     for name, coef in zip(model.feature_names_in_, np.transpose(model.coef_)):
         print(f"{name}: {coef}")
+
+    print()
+    print(roc_auc_score(model.predict(test_X), test_y))
+    print(model.score(test_X, test_y))
     # Store model predictions over test set
     real = load_test("../datasets/test_set_week_1.csv")
     evaluate_and_export(model, real, "id1_id2_id3.csv")
