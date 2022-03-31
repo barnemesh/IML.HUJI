@@ -1,3 +1,5 @@
+import pandas
+
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
@@ -8,6 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
 import datetime as dt
+from sklearn.metrics import r2_score  # TODO remove
 
 pio.templates.default = "simple_white"
 
@@ -27,16 +30,31 @@ def load_data(filename: str):
     """
     full_data = pd.read_csv(filename).dropna().drop_duplicates()
     full_data.drop(full_data[full_data["price"] <= 0].index, inplace=True)
-    # full_data["date"] = full_data["date"].map(dt.datetime.toordinal).fillna(0)
+    full_data["year"] = pandas.to_numeric(full_data["date"].apply(lambda x: x[:4]))
+    full_data["month"] = pandas.to_numeric(full_data["date"].apply(lambda x: x[4:6]))
+    full_data["date"] = full_data["date"].apply(
+        lambda x: pd.to_datetime(x[:-7], format="%Y%m%d").value
+    )
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
         ["price",
-         "id",
-         "date"
+         "date",  # very low pearson, bad results.
+         "year",  # very low pearson, bad results.
+         "month", # very low pearson, bad results.
+         "id",  # low p
+         # "lat",   # low variance of data
+         "long",  # low variance of data, low pearson
+         # "floors", # low variance of data
+         # "sqft_lot",  # low pearson
+         # "sqft_lot15",  # low pearson
+         # "yr_built",  # low pearson
+         "zipcode",  # low pearson - categorical
+         # "yr_renovated",  # low pearson - even with preprocess?
          ],
         axis=1)
     )
-    df["yr_renovated"].mask(df["yr_renovated"] <= 0, df["yr_built"], axis=0, inplace=True)
+    df["yr_renovated"].mask(df["yr_renovated"] <= df["yr_built"], df["yr_built"], axis=0, inplace=True)
+    # df = df.drop(["yr_built"], axis=1)
     return df, res_vector
 
 
@@ -75,7 +93,6 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-
     features, responses = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
@@ -91,9 +108,49 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+    test_X, test_y = test_X.to_numpy(), test_y.to_numpy()
     model = LinearRegression()
-    mean_loss_array = np.zeros(90)
+    p_arr = np.arange(10, 101)
+    mean_loss_array = np.zeros(91)
+    std_loss_array = np.zeros(91)
     for i in range(10, 101):
-        train_X, train_y, test_X, test_y = split_train_test(features, responses, i / 100)
+        losses = []
+        for _ in range(10):
+            ipX_train, ipy_train, ipX_test, ipy_test = \
+                split_train_test(train_X, train_y, i / 100)
+            ipX_train, ipy_train = ipX_train.to_numpy(), ipy_train.to_numpy()
+            losses.append(model.fit(ipX_train, ipy_train).loss(test_X, test_y))
 
-        model.fit()
+        mean_loss_array[i - 10], std_loss_array[i - 10] = \
+            np.mean(losses, axis=0), np.std(losses, axis=0)
+    # print(r2_score(test_y, model.predict(test_X)))
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array,
+                name="Mean loss",
+                mode="markers+lines",
+                line=dict(dash="dash"),
+                marker=dict(color="green", opacity=.7)
+            ),
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array - 2 * std_loss_array,
+                name="confidence",
+                fill=None, mode="lines",
+                line=dict(color="lightgrey"),
+                showlegend=False),
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array + 2 * std_loss_array,
+                name="confidence",
+                fill='tonexty',
+                mode="lines",
+                line=dict(color="lightgrey"),
+                showlegend=False)],
+        layout=go.Layout(title="Mean loss as function of p% of the training set")
+    )
+    fig.show()
+    # TODO: remove:
+    fig.write_image(f"./Plots/MeanLoss.png")
