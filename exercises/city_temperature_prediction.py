@@ -106,6 +106,7 @@ if __name__ == '__main__':
     plot = px.bar(data_frame=loss_df,
                   x="k",
                   y="loss",
+                  text="loss",
                   title="Test error recorded based on degree of Polyfit k",
                   labels={"loss": "Test error recorded"})
     plot.show()
