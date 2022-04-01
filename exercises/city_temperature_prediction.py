@@ -42,7 +42,7 @@ def load_data(filename: str) -> pd.DataFrame:
         inplace=True
     )
     full_data["DayOfYear"] = full_data["Date"].dt.dayofyear
-    features = full_data.drop(["Temp"], axis=1)
+    # features = full_data.drop(["Temp"], axis=1)
     # return features, full_data["Temp"]
     return full_data
 
@@ -58,15 +58,14 @@ if __name__ == '__main__':
     plot = px.scatter(data_frame=il_df, x="DayOfYear", y="Temp", color="Year",
                       title="Temp as function of DayOfYear in israel")
     plot.show()
-    plot.write_image("./Plots/IsraelTemp.png")  # TODO : remove
-    # TODO: x^3 - x^2 ?
+    # plot.write_image("./Plots/IsraelTemp.png")
     grouped_months = il_df.groupby(["Month"])["Temp"].agg("std")
-    plot = px.bar(data_frame=grouped_months, y="Temp",
+    plot = px.bar(data_frame=grouped_months,
+                  y="Temp",
                   title="std of Temp per month in Israel",
                   labels={"Temp": "STD of Temp"})
     plot.show()
-    plot.write_image("./Plots/IsraelMothStd.png")  # TODO : remove
-    # TODO: better in months with lower STD?
+    # plot.write_image("./Plots/IsraelMothStd.png")
 
     # Question 3 - Exploring differences between countries
     cm_df = df.groupby(["Country", "Month"])["Temp"].agg(
@@ -81,10 +80,7 @@ if __name__ == '__main__':
         labels={"MeanTemp": "Mean of Temp", "StdTemp": "Std of Temp"}
     )
     plot.show()
-    plot.write_image("./Plots/AvgTemp.png")  # TODO : remove
-    # TODO: SA has a different pattern, will not do good with the IL model.
-    # TODO: NTL will also not do as good as JRD - the model is likely to have
-    #  strong bias.
+    # plot.write_image("./Plots/AvgTemp.png")
 
     # Question 4 - Fitting model for different values of `k`
     loss = []
@@ -110,11 +106,7 @@ if __name__ == '__main__':
                   title="Test error recorded based on degree of Polyfit k",
                   labels={"loss": "Test error recorded"})
     plot.show()
-    plot.write_image("./Plots/PolyfitError.png")  # TODO : remove
-    # TODO: 5 or 6 are the best - 6 slightly better, marginal, but 5 less
-    #  complex. higher values will cause over fit -
-    #  we see that 9 and 10 already have the same loss, so adding higher k will
-    #  only complicate the model and will not get better results.
+    # plot.write_image("./Plots/PolyfitError.png")
 
     # Question 5 - Evaluating fitted model on different countries
     model = PolynomialFitting(5)
@@ -131,12 +123,11 @@ if __name__ == '__main__':
              np.round(model.loss(X, y), 2),
              # np.mean((test_y-y_hat)**2)
              ])
-        # TODO: remove
-        plot = px.scatter(
-            x=X,
-            y=[y, model.predict(X)],
-            title=f"{country} predict and true",
-        ).write_image(f"./Plots/{country}Predict.png")
+        # plot = px.scatter(
+        #     x=X,
+        #     y=[y, model.predict(X)],
+        #     title=f"{country} predict and true",
+        # ).write_image(f"./Plots/{country}Predict.png")
 
     ctr_loss_df = pd.DataFrame.from_records(ctr_loss,
                                             columns=["Country", "Loss"])
@@ -148,15 +139,4 @@ if __name__ == '__main__':
                   text="Loss",
                   color="Country")
     plot.show()
-    plot.write_image("./Plots/CountryPolyfit.png")
-    # TODO: we have great fit in jordan - that had very similar cross with the
-    #  area of the israel data, but with the netherlands, even if the
-    #  polynomial is in similar shape, we had consistent bias, and that
-    #  increased our loss. In south africa we had the opposite mistake -
-    #  since some of the data did match, the loss was lower, even when the
-    #  the polynomial was completely wrong - as we saw in the months that had
-    #  some cross in the values .
-    #  summary:
-    #  netherlands : we saw no crossing with israel, big loss.
-    #  jordan : lots of cross, big good.
-    #  south africa : some cross, some not, not so good, misleading results!
+    # plot.write_image("./Plots/CountryPolyfit.png")
