@@ -37,11 +37,9 @@ def load_data(filename: str):
                                          "checkout_date",
                                          "hotel_live_date"]).drop_duplicates()
 
-
     full_data["cancellation_days_after_booking"] = \
         (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) -
          full_data['booking_datetime']).dt.days
-
 
     full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
         full_data["cancellation_days_after_booking"] < 7, 100)
@@ -52,6 +50,11 @@ def load_data(filename: str):
     full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
         full_data["cancellation_days_after_booking"] > 30, False)
 
+    full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
+                                                                          'Pay at Check-in': 0})
+
+    full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
+        'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
 
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
         'China': 7, 'South Africa': 6, 'South Korea': 7, 'Singapore': 7, 'Thailand': 7, 'Argentina': 4,
@@ -61,7 +64,7 @@ def load_data(filename: str):
         'Czech Republic': 0, 'Finland': 0, 'United Arab Emirates': 2, 'Brazil': 4, 'Bangladesh': 7,
         'France': 0, 'Cambodia': 7, 'Russia': 0, 'Belgium': 0, 'Bahrain': 2, 'Macau': 7, 'Switzerland': 0,
         'Hungary': 0, 'Italy': 0, 'Austria': 0, 'Oman': 2, 'Spain': 0, 'Ukraine': 0, 'Slovakia': 0, 'Canada': 3,
-        'Kuwait': 1, 'Denmark': 0, 'Pakistan': 2, 'Ireland': 0, 'Brunei Darussalam': 7,  'Poland': 0,
+        'Kuwait': 1, 'Denmark': 0, 'Pakistan': 2, 'Ireland': 0, 'Brunei Darussalam': 7, 'Poland': 0,
         'Sweden': 0, 'Morocco': 6, 'Israel': 1, 'Egypt': 1, 'Netherlands': 0, 'Myanmar': 7, 'Angola': 6,
         'Romania': 0, 'Mauritius': 6, 'Kenya': 6, 'Mongolia': 7, 'Laos': 7, 'Nepal': 7, 'Chile': 4, 'Turkey': 1,
         'Qatar': 2, 'Jordan': 1, 'Puerto Rico': 3, 'Uruguay': 4, 'Algeria': 6, 'Portugal': 0, 'UNKNOWN': 8,
@@ -81,18 +84,12 @@ def load_data(filename: str):
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4})
 
-    full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
-        'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
-
     full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
         'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
         'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
         'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
         'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
         'Chalet': 20})
-
-    full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
-                                                                          'Pay at Check-in': 0})
 
     full_data["special_requests"] = full_data["request_nonesmoke"].fillna(0) + full_data["request_latecheckin"].fillna(
         0) \
@@ -107,7 +104,8 @@ def load_data(filename: str):
         "request_largebed",
         "request_twinbeds",
         "request_airport",
-        "request_earlycheckin"
+        "request_earlycheckin",
+        "hotel_chain_code",
     ], axis=1)
 
     full_data['TimeDiff'] = (full_data['checkin_date'] - full_data['booking_datetime']).dt.days
@@ -122,7 +120,6 @@ def load_data(filename: str):
     full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal)  # .fillna(0)
 
-    labels = full_data["cancellation_days_after_booking"]
     features = full_data[[
         "TimeDiff",
         "cancellation_policy_numbered",
@@ -138,6 +135,8 @@ def load_data(filename: str):
         "guest_nationality_country_name_processed",
     ]]
 
+    labels = full_data["cancellation_days_after_booking"]
+
     return features, labels
 
 
@@ -148,15 +147,15 @@ def load_test(filename: str):
                                          "checkout_date",
                                          "hotel_live_date"]).drop_duplicates()
 
+    full_data["cancellation_days_after_booking"] = \
+        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) -
+         full_data['booking_datetime']).dt.days
+
     full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
                                                                           'Pay at Check-in': 0})
 
     full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
         'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
-
-    full_data["cancellation_days_after_booking"] = \
-        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) -
-         full_data['booking_datetime']).dt.days
 
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
         'China': 7, 'South Africa': 6, 'South Korea': 7, 'Singapore': 7, 'Thailand': 7, 'Argentina': 4,
@@ -166,7 +165,7 @@ def load_test(filename: str):
         'Czech Republic': 0, 'Finland': 0, 'United Arab Emirates': 2, 'Brazil': 4, 'Bangladesh': 7,
         'France': 0, 'Cambodia': 7, 'Russia': 0, 'Belgium': 0, 'Bahrain': 2, 'Macau': 7, 'Switzerland': 0,
         'Hungary': 0, 'Italy': 0, 'Austria': 0, 'Oman': 2, 'Spain': 0, 'Ukraine': 0, 'Slovakia': 0, 'Canada': 3,
-        'Kuwait': 1, 'Denmark': 0, 'Pakistan': 2, 'Ireland': 0, 'Brunei Darussalam': 7,  'Poland': 0,
+        'Kuwait': 1, 'Denmark': 0, 'Pakistan': 2, 'Ireland': 0, 'Brunei Darussalam': 7, 'Poland': 0,
         'Sweden': 0, 'Morocco': 6, 'Israel': 1, 'Egypt': 1, 'Netherlands': 0, 'Myanmar': 7, 'Angola': 6,
         'Romania': 0, 'Mauritius': 6, 'Kenya': 6, 'Mongolia': 7, 'Laos': 7, 'Nepal': 7, 'Chile': 4, 'Turkey': 1,
         'Qatar': 2, 'Jordan': 1, 'Puerto Rico': 3, 'Uruguay': 4, 'Algeria': 6, 'Portugal': 0, 'UNKNOWN': 8,
@@ -186,18 +185,18 @@ def load_test(filename: str):
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4})
 
-    full_data["special_requests"] = full_data["request_nonesmoke"].fillna(0) + full_data["request_latecheckin"].fillna(
-        0) \
-                                    + full_data["request_highfloor"].fillna(0) + full_data["request_largebed"].fillna(0) \
-                                    + full_data["request_twinbeds"].fillna(0) + full_data["request_airport"].fillna(0) \
-                                    + full_data["request_earlycheckin"].fillna(0)
-
     full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
         'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
         'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
         'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
         'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
         'Chalet': 20})
+
+    full_data["special_requests"] = full_data["request_nonesmoke"].fillna(0) + full_data["request_latecheckin"].fillna(
+        0) \
+                                    + full_data["request_highfloor"].fillna(0) + full_data["request_largebed"].fillna(0) \
+                                    + full_data["request_twinbeds"].fillna(0) + full_data["request_airport"].fillna(0) \
+                                    + full_data["request_earlycheckin"].fillna(0)
 
     full_data = full_data.drop([
         "request_nonesmoke",
@@ -209,12 +208,14 @@ def load_test(filename: str):
         "request_earlycheckin",
         "hotel_chain_code",
     ], axis=1)
-    full_data = full_data.dropna()
+
     full_data['TimeDiff'] = (full_data['checkin_date'] - full_data['booking_datetime']).dt.days
+
     full_data["cancellation_policy_numbered"] = \
         full_data.apply(lambda x: transform_policy(x["cancellation_policy_code"],
                                                    x["TimeDiff"],
                                                    x["original_selling_amount"]), axis=1)
+
     full_data["booking_datetime"] = full_data["booking_datetime"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal)  # .fillna(0)
     full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)  # .fillna(0)
@@ -235,6 +236,8 @@ def load_test(filename: str):
         "accommadation_type_name_proccessed",
         "guest_nationality_country_name_processed"
     ]]
+    # full_data = full_data.dropna()
+
     return features
 
 
