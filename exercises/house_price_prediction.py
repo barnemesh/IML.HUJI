@@ -41,7 +41,7 @@ def load_data(filename: str):
         full_data[
             (full_data["price"] <= 0) |
             (full_data["sqft_lot15"] <= 0)
-            # | (full_data["bedrooms"] > 30)
+            | (full_data["bedrooms"] > 30)
             ].index
     )
     # full_data = full_data.drop(
@@ -57,6 +57,8 @@ def load_data(filename: str):
     full_data["date"] = full_data["date"].apply(
         lambda x: pd.to_datetime(x[:-7], format="%Y%m%d").value
     )
+    full_data["zipcode"] = full_data["zipcode"].astype(int)
+    full_data = pd.get_dummies(full_data, prefix="zipcode_", columns=["zipcode"])
     # create responses and remove useless features
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
@@ -65,7 +67,6 @@ def load_data(filename: str):
          "year",
          "month",
          "id",
-         "zipcode",
          ],
         axis=1)
     )
