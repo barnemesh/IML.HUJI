@@ -1,3 +1,5 @@
+import pandas
+
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
@@ -8,6 +10,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
 import datetime as dt
+
+# from sklearn.metrics import r2_score
 
 pio.templates.default = "simple_white"
 
@@ -25,18 +29,54 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    full_data = pd.read_csv(filename).dropna().drop_duplicates()
-    full_data.drop(full_data[full_data["price"] <= 0].index, inplace=True)
-    # full_data["date"] = full_data["date"].map(dt.datetime.toordinal).fillna(0)
+    full_data = pd.read_csv(filename).drop_duplicates()
+    # fill missing values:
+    # date and id are dropped anyway -
+    # we can give them some values that won't change the results.
+    full_data["id"] = full_data["id"].fillna(full_data["id"].mean())
+    full_data["date"] = full_data["date"].fillna("20140502T000000")
+    full_data = full_data.dropna()
+    # remove outlier that are likely to be errors.
+    full_data = full_data.drop(
+        full_data[
+            (full_data["price"] <= 0) |
+            (full_data["sqft_lot15"] <= 0)
+            | (full_data["bedrooms"] > 30)
+            ].index
+    )
+    # full_data = full_data.drop(
+    #     full_data[(full_data["bedrooms"] == 0) & (full_data["bathrooms"] == 0)].index
+    # )
+    # create new features from existing features:
+    full_data["year"] = pandas.to_numeric(full_data["date"].apply(
+        lambda x: x[:4])
+    )
+    full_data["month"] = pandas.to_numeric(full_data["date"].apply(
+        lambda x: x[4:6])
+    )
+    full_data["date"] = full_data["date"].apply(
+        lambda x: pd.to_datetime(x[:-7], format="%Y%m%d").value
+    )
+    full_data["zipcode"] = full_data["zipcode"].astype(int)
+    full_data = pd.get_dummies(full_data, prefix="zipcode_", columns=["zipcode"])
+    # create responses and remove useless features
     res_vector = pd.Series(full_data["price"])
     df = pd.DataFrame(full_data.drop(
         ["price",
+         "date",
+         "year",
+         "month",
          "id",
-         "date"
          ],
         axis=1)
     )
-    df["yr_renovated"].mask(df["yr_renovated"] <= 0, df["yr_built"], axis=0, inplace=True)
+    # update the renovated year:
+    df["yr_renovated"].mask(
+        df["yr_renovated"] <= df["yr_built"],
+        df["yr_built"],
+        axis=0,
+        inplace=True
+    )
     return df, res_vector
 
 
@@ -75,10 +115,10 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-
     features, responses = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
+    feature_evaluation(features, responses)
     # feature_evaluation(features, responses, "./Plots")
 
     # Question 3 - Split samples into training- and testing sets.
@@ -91,9 +131,48 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
+    test_X, test_y = test_X.to_numpy(), test_y.to_numpy()
     model = LinearRegression()
-    mean_loss_array = np.zeros(90)
+    p_arr = np.arange(10, 101)
+    mean_loss_array = np.zeros(91)
+    std_loss_array = np.zeros(91)
     for i in range(10, 101):
-        train_X, train_y, test_X, test_y = split_train_test(features, responses, i / 100)
+        losses = []
+        for _ in range(10):
+            ipX_train, ipy_train, ipX_test, ipy_test = \
+                split_train_test(train_X, train_y, i / 100)
+            ipX_train, ipy_train = ipX_train.to_numpy(), ipy_train.to_numpy()
+            losses.append(model.fit(ipX_train, ipy_train).loss(test_X, test_y))
 
-        model.fit()
+        mean_loss_array[i - 10], std_loss_array[i - 10] = \
+            np.mean(losses, axis=0), np.std(losses, axis=0)
+    # print(r2_score(test_y, model.predict(test_X)))
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array,
+                name="Mean loss",
+                mode="markers+lines",
+                line=dict(dash="dash"),
+                marker=dict(color="green", opacity=.7)
+            ),
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array - 2 * std_loss_array,
+                name="confidence",
+                fill=None, mode="lines",
+                line=dict(color="lightgrey"),
+                showlegend=False),
+            go.Scatter(
+                x=p_arr,
+                y=mean_loss_array + 2 * std_loss_array,
+                name="confidence",
+                fill='tonexty',
+                mode="lines",
+                line=dict(color="lightgrey"),
+                showlegend=False)],
+        layout=go.Layout(title="Mean loss as function of p% of the training set")
+    )
+    fig.show()
+    # fig.write_image(f"./Plots/MeanLoss.png")
