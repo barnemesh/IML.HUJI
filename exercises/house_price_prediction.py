@@ -30,57 +30,58 @@ def load_data(filename: str):
     DataFrame or a Tuple[DataFrame, Series]
     """
     full_data = pd.read_csv(filename).drop_duplicates()
-    # fill missing values:
-    # date and id are dropped anyway -
-    # we can give them some values that won't change the results.
-    full_data["id"] = full_data["id"].fillna(full_data["id"].mean())
-    full_data["date"] = full_data["date"].fillna("20140502T000000")
+    # Drop unused values here---
+    full_data = full_data.drop(["id", "date"], axis=1)
     full_data = full_data.dropna()
+
     # remove outlier that are likely to be errors.
     full_data = full_data.drop(
         full_data[
             (full_data["price"] <= 0) |
-            (full_data["sqft_lot15"] <= 0)
-            | (full_data["bedrooms"] > 30)
+            (full_data["sqft_living"] <= 0) |
+            (full_data["sqft_lot"] <= 0) |
+            (full_data["sqft_above"] <= 0) |
+            (full_data["yr_built"] <= 0) |
+            (full_data["sqft_lot15"] <= 0) |
+
+            (full_data["bathrooms"] < 0) |
+            (full_data["bedrooms"] < 0) |
+            (full_data["floors"] < 0) |
+            (full_data["sqft_basement"] < 0) |
+            (full_data["yr_renovated"] < 0) |
+
+            (~full_data["waterfront"].isin([0, 1])) |
+            (~full_data["view"].isin(range(5))) |
+            (~full_data["condition"].isin(range(1, 6))) |
+            (~full_data["grade"].isin(range(1, 15))) |
+
+            (full_data["bedrooms"] > 30)
             ].index
     )
     # full_data = full_data.drop(
     #     full_data[(full_data["bedrooms"] == 0) & (full_data["bathrooms"] == 0)].index
     # )
+
     # create new features from existing features:
-    full_data["year"] = pandas.to_numeric(full_data["date"].apply(
-        lambda x: x[:4])
-    )
-    full_data["month"] = pandas.to_numeric(full_data["date"].apply(
-        lambda x: x[4:6])
-    )
-    full_data["date"] = full_data["date"].apply(
-        lambda x: pd.to_datetime(x[:-7], format="%Y%m%d").value
-    )
     full_data["zipcode"] = full_data["zipcode"].astype(int)
-    full_data = pd.get_dummies(full_data, prefix="zipcode_", columns=["zipcode"])
-    # create responses and remove useless features
-    res_vector = pd.Series(full_data["price"])
-    df = pd.DataFrame(full_data.drop(
-        ["price",
-         "date",
-         "year",
-         "month",
-         "id",
-         ],
-        axis=1)
-    )
-    # update the renovated year:
-    df["yr_renovated"].mask(
-        df["yr_renovated"] <= df["yr_built"],
-        df["yr_built"],
+    full_data = pd.get_dummies(full_data,
+                               prefix="zipcode_",
+                               columns=["zipcode"])
+
+    full_data["yr_last_worked_on"] = full_data["yr_renovated"].astype(int)
+    full_data["yr_last_worked_on"].mask(
+        full_data["yr_renovated"] <= full_data["yr_built"],
+        full_data["yr_built"],
         axis=0,
         inplace=True
     )
-    return df, res_vector
+    # drop data used only for new features:
+    full_data = full_data.drop(["yr_built", "yr_renovated"], axis=1)
+    return full_data.drop("price", axis=1), full_data["price"]
 
 
-def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
+def feature_evaluation(X: pd.DataFrame, y: pd.Series,
+                       output_path: str = ".") -> NoReturn:
     """
     Create scatter plot between each feature and the response.
         - Plot title specifies feature name
@@ -106,10 +107,12 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
                 x=array,
                 y=y,
                 mode="markers",
-                name=f"feature {name}. p={p_cor}"
             )
-        ).update_layout(title={"text": f"feature {name}. p={p_cor}"}
-                        ).write_image(f"{output_path}/{name}.png")
+        ).update_layout(
+            title=f"feature {name} correlation with response. pearson = {p_cor}",
+            xaxis_title=f"{name}",
+            yaxis_title=f"response"
+        ).write_image(f"{output_path}/{name}.png")
 
 
 if __name__ == '__main__':
@@ -118,8 +121,7 @@ if __name__ == '__main__':
     features, responses = load_data("../datasets/house_prices.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    feature_evaluation(features, responses)
-    # feature_evaluation(features, responses, "./Plots")
+    # feature_evaluation(features, responses)
 
     # Question 3 - Split samples into training- and testing sets.
     train_X, train_y, test_X, test_y = split_train_test(features, responses)
@@ -146,7 +148,7 @@ if __name__ == '__main__':
 
         mean_loss_array[i - 10], std_loss_array[i - 10] = \
             np.mean(losses, axis=0), np.std(losses, axis=0)
-    # print(r2_score(test_y, model.predict(test_X)))
+
     fig = go.Figure(
         data=[
             go.Scatter(
@@ -172,7 +174,11 @@ if __name__ == '__main__':
                 mode="lines",
                 line=dict(color="lightgrey"),
                 showlegend=False)],
-        layout=go.Layout(title="Mean loss as function of p% of the training set")
+        layout=go.Layout(
+            title="Mean loss as function of p% of the training set",
+            xaxis=dict(title="p% of training set"),
+            yaxis=dict(title="Mean loss")
+        )
     )
     fig.show()
-    # fig.write_image(f"./Plots/MeanLoss.png")
+    fig.write_image(f"./Plots/MeanLoss.png")

@@ -57,7 +57,6 @@ class LinearRegression(BaseEstimator):
         else:
             self.coefs_ = pinv(X) @ y
 
-
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict responses for given samples using fitted estimator
