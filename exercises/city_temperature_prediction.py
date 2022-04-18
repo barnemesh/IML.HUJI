@@ -22,14 +22,14 @@ def load_data(filename: str) -> pd.DataFrame:
     -------
     Design matrix and response vector (Temp)
     """
-    full_data = pd.read_csv(filename).dropna().drop_duplicates()
-    full_data["Date"] = pd.to_datetime(full_data["Date"])
-    full_data.drop(  # todo: days in month based on the month (and year in feb)
-        full_data[(full_data["Day"] <= 0) | (full_data["Day"] > 31)].index,
-        inplace=True
-    )
+    full_data = pd.read_csv(filename,
+                            parse_dates=["Date"]).dropna().drop_duplicates()
     full_data.drop(
-        full_data[(full_data["Month"] <= 0) | (full_data["Month"] > 12)].index,
+        full_data[
+            (~full_data["Day"].isin(range(1, 32))) |
+            (~full_data["Month"].isin(range(1, 13))) |
+            (full_data["Temp"] < -70)
+            ].index,
         inplace=True
     )
     date_from_col = pd.to_datetime(full_data[['Year', 'Month', 'Day']])
@@ -37,13 +37,7 @@ def load_data(filename: str) -> pd.DataFrame:
         full_data[full_data["Date"] != date_from_col].index,
         inplace=True
     )
-    full_data.drop(
-        full_data[full_data["Temp"] < -72].index,
-        inplace=True
-    )
     full_data["DayOfYear"] = full_data["Date"].dt.dayofyear
-    # features = full_data.drop(["Temp"], axis=1)
-    # return features, full_data["Temp"]
     return full_data
 
 
@@ -55,17 +49,24 @@ if __name__ == '__main__':
     # Question 2 - Exploring data for specific country
     il_df = df.drop(df[df["Country"] != "Israel"].index)
     il_df["Year"] = il_df["Year"].astype(str)
-    plot = px.scatter(data_frame=il_df, x="DayOfYear", y="Temp", color="Year",
-                      title="Temp as function of DayOfYear in israel")
+
+    plot = px.scatter(
+        data_frame=il_df,
+        x="DayOfYear",
+        y="Temp",
+        color="Year",
+        title="Temp as function of DayOfYear in Israel"
+    )
     plot.show()
-    # plot.write_image("./Plots/IsraelTemp.png")
+
     grouped_months = il_df.groupby(["Month"])["Temp"].agg("std")
-    plot = px.bar(data_frame=grouped_months,
-                  y="Temp",
-                  title="std of Temp per month in Israel",
-                  labels={"Temp": "STD of Temp"})
+    plot = px.bar(
+        data_frame=grouped_months,
+        y="Temp",
+        title="std of Temp per month in Israel",
+        labels={"Temp": "STD of Temp"}
+    )
     plot.show()
-    # plot.write_image("./Plots/IsraelMothStd.png")
 
     # Question 3 - Exploring differences between countries
     cm_df = df.groupby(["Country", "Month"])["Temp"].agg(
@@ -77,10 +78,9 @@ if __name__ == '__main__':
         error_y="std",
         title="average monthly temperature",
         color="Country",
-        labels={"MeanTemp": "Mean of Temp", "StdTemp": "Std of Temp"}
+        labels={"mean": "Mean of Temp"}
     )
     plot.show()
-    # plot.write_image("./Plots/AvgTemp.png")
 
     # Question 4 - Fitting model for different values of `k`
     loss = []
@@ -91,22 +91,19 @@ if __name__ == '__main__':
     for k in range(1, 11):
         model = PolynomialFitting(k)
         model.fit(train_X.to_numpy(), train_y.to_numpy())
-        loss.append(
-            [k,
-             np.round(model.loss(test_X, test_y), 2),
-             # np.mean((test_y-y_hat)**2)
-             ])
-        print("deg {} : loss {}".format(*loss[-1]))
+        loss.append([k, np.round(model.loss(test_X, test_y), 2)])
 
     loss_df = pd.DataFrame.from_records(loss, columns=["k", "loss"])
-    plot = px.bar(data_frame=loss_df,
-                  x="k",
-                  y="loss",
-                  text="loss",
-                  title="Test error recorded based on degree of Polyfit k",
-                  labels={"loss": "Test error recorded"})
+    print(loss_df.to_string(index=False))
+    plot = px.bar(
+        data_frame=loss_df,
+        x="k",
+        y="loss",
+        text="loss",
+        title="Test error recorded based on degree of Polyfit k",
+        labels={"loss": "Test error recorded"}
+    )
     plot.show()
-    # plot.write_image("./Plots/PolyfitError.png")
 
     # Question 5 - Evaluating fitted model on different countries
     model = PolynomialFitting(5)
@@ -118,25 +115,17 @@ if __name__ == '__main__':
         X = c["DayOfYear"]
         y = c["Temp"]
         country = c["Country"].unique()[0]
-        ctr_loss.append(
-            [country,
-             np.round(model.loss(X, y), 2),
-             # np.mean((test_y-y_hat)**2)
-             ])
-        # plot = px.scatter(
-        #     x=X,
-        #     y=[y, model.predict(X)],
-        #     title=f"{country} predict and true",
-        # ).write_image(f"./Plots/{country}Predict.png")
+        ctr_loss.append([country, np.round(model.loss(X, y), 2)])
 
     ctr_loss_df = pd.DataFrame.from_records(ctr_loss,
                                             columns=["Country", "Loss"])
-    plot = px.bar(data_frame=ctr_loss_df,
-                  x="Country",
-                  y="Loss",
-                  title="Error of model fitted over Israel by country",
-                  labels={"Loss": "Test error recorded"},
-                  text="Loss",
-                  color="Country")
+    plot = px.bar(
+        data_frame=ctr_loss_df,
+        x="Country",
+        y="Loss",
+        title="Error of model fitted over Israel by country",
+        labels={"Loss": "Test error recorded"},
+        text="Loss",
+        color="Country"
+    )
     plot.show()
-    # plot.write_image("./Plots/CountryPolyfit.png")
