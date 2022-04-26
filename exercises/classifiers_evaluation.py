@@ -53,10 +53,23 @@ def run_perceptron():
         model.fit(X, y)
 
         # Plot figure of loss as function of fitting iteration
-        fig = px.line(
-            data_frame=losses,
-            title=n + "Perceptron loss as function of iterations"
-        )
+        # fig = px.line(
+        #     data_frame=losses,
+        #     title="Perceptron loss as function of iterations"
+        # )
+        fig = go.Figure(
+            layout=go.Layout(
+                title="Perceptron loss as function of iterations<br>" + n + " data",
+                xaxis=dict(title="Iteration"),
+                yaxis=dict(title=r"Loss")),
+            data=[
+                go.Scatter(
+                    y=losses,
+                    # x=range(len(losses)),
+                    mode="lines",
+                    showlegend=False
+                )
+            ])
         fig.write_image("./Plots/Ex3/" + n + ".png")
 
 
