@@ -52,25 +52,20 @@ def run_perceptron():
         model = Perceptron(callback=callback)
         model.fit(X, y)
 
-        # Plot figure of loss as function of fitting iteration
-        # fig = px.line(
-        #     data_frame=losses,
-        #     title="Perceptron loss as function of iterations"
-        # )
         fig = go.Figure(
             layout=go.Layout(
-                title="Perceptron loss as function of iterations<br>" + n + " data",
+                title="Perceptron loss as function of iterations<br>" + n + " data<br>",
                 xaxis=dict(title="Iteration"),
-                yaxis=dict(title=r"Loss")),
+                yaxis=dict(title="Loss")),
             data=[
                 go.Scatter(
                     y=losses,
-                    # x=range(len(losses)),
                     mode="lines",
                     showlegend=False
                 )
             ])
         fig.write_image("./Plots/Ex3/" + n + ".png")
+        fig.show()
 
 
 def get_ellipse(mu: np.ndarray, cov: np.ndarray):
@@ -104,16 +99,41 @@ def compare_gaussian_classifiers():
     """
     for f in ["gaussian1.npy", "gaussian2.npy"]:
         # Load dataset
-        raise NotImplementedError()
+        X, y = load_dataset("../datasets/" + f)
 
         # Fit models and predict over training set
-        raise NotImplementedError()
+        lda = LDA()
+        lda.fit(X, y)
+        lda_predict = lda.predict(X)
+
+        # raise NotImplementedError() TODO gaus
 
         # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
         # Create subplots
         from IMLearn.metrics import accuracy
-        raise NotImplementedError()
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=["gaus" + f, "lda" + f],
+        )
+        fig.add_traces(
+            [
+                go.Scatter(x=X[:, 0],
+                           y=X[:, 1],
+                           showlegend=False,
+                           mode="markers",
+                           marker=dict(
+                               color=lda_predict,
+                               symbol=y#class_symbols[y]
+                               # line=dict(color="black", width=1))
+                           ))
+            ],
+            rows=1, cols=2
+        )
+        fig.update_layout(title_text="Title")
+        fig.show()
+        fig.write_image("./Plots/Ex3/lda_gauss_predict_" + f + ".png")
+        # raise NotImplementedError() TODO gaus
 
         # Add traces for data-points setting symbols and colors
         raise NotImplementedError()
@@ -127,5 +147,5 @@ def compare_gaussian_classifiers():
 
 if __name__ == '__main__':
     np.random.seed(0)
-    run_perceptron()
+    # run_perceptron()
     compare_gaussian_classifiers()

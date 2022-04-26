@@ -81,11 +81,11 @@ class Perceptron(BaseEstimator):
         self.coefs_ = np.zeros(n_features)
         self.fitted_ = True
         for t in range(self.max_iter_):
+            z = np.einsum("j,ji,i->j", y, X, self.coefs_) # y * X @ self.coefs_
             for i in range(n_samples):
-                # TODO: ? use np.einsum("i,i,ji",y,w,X) to get all together?
-                if y[i] * np.dot(self.coefs_, X[i]) <= 0:
+                if z[i] <= 0:
                     self.coefs_ += y[i] * X[i]
-                    self.callback_(self, X[i], y[i])
+                    self.callback_(self, X[i], y[i])   # callback with intercept=false?
                     break
             else:
                 break
@@ -106,7 +106,6 @@ class Perceptron(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.insert(X, 0, 1, axis=1)
-        n_samples, n_features = X.shape
         return np.sign(np.einsum("ij,j->i", X, self.coefs_))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
