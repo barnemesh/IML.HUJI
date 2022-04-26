@@ -2,6 +2,7 @@ from IMLearn.learners.classifiers import Perceptron, LDA, GaussianNaiveBayes
 from typing import Tuple
 from utils import *
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 from math import atan2, pi
 
@@ -36,16 +37,27 @@ def run_perceptron():
     Create a line plot that shows the perceptron algorithm's training loss values (y-axis)
     as a function of the training iterations (x-axis).
     """
-    for n, f in [("Linearly Separable", "linearly_separable.npy"), ("Linearly Inseparable", "linearly_inseparable.npy")]:
+    for n, f in [("Linearly Separable", "linearly_separable.npy"),
+                 ("Linearly Inseparable", "linearly_inseparable.npy")]:
         # Load dataset
-        raise NotImplementedError()
+        X, y = load_dataset("../datasets/" + f)
 
         # Fit Perceptron and record loss in each fit iteration
         losses = []
-        raise NotImplementedError()
+
+        # callback = lambda p, s, r: losses.append(p.loss(X, y))
+        def callback(p: Perceptron, s: np.ndarray, r: int):
+            losses.append(p.loss(X, y))
+
+        model = Perceptron(callback=callback)
+        model.fit(X, y)
 
         # Plot figure of loss as function of fitting iteration
-        raise NotImplementedError()
+        fig = px.line(
+            data_frame=losses,
+            title=n + "Perceptron loss as function of iterations"
+        )
+        fig.write_image("./Plots/Ex3/" + n + ".png")
 
 
 def get_ellipse(mu: np.ndarray, cov: np.ndarray):
