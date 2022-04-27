@@ -77,6 +77,7 @@ class Perceptron(BaseEstimator):
         x_inter = X.copy()
         if self.include_intercept_:
             x_inter = np.insert(x_inter, 0, 1, axis=1)
+
         n_samples, n_features = x_inter.shape
 
         self.coefs_ = np.zeros(n_features)

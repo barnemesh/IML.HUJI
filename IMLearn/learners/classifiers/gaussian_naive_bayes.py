@@ -42,6 +42,7 @@ class GaussianNaiveBayes(BaseEstimator):
             Responses of input data to fit to
         """
         n_samples, n_features = X.shape
+
         self.classes_, counts = np.unique(y, return_counts=True)
         self.pi_ = counts / n_samples
 
