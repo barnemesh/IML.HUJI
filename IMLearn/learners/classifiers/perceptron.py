@@ -74,17 +74,18 @@ class Perceptron(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.fit_intercept_`
         """
+        x_inter = X.copy()
         if self.include_intercept_:
-            X = np.insert(X, 0, 1, axis=1)
-        n_samples, n_features = X.shape
+            x_inter = np.insert(x_inter, 0, 1, axis=1)
+        n_samples, n_features = x_inter.shape
 
         self.coefs_ = np.zeros(n_features)
         self.fitted_ = True
         for t in range(self.max_iter_):
-            z = np.einsum("j,ji,i->j", y, X, self.coefs_) # y * X @ self.coefs_
+            z = np.einsum("j,ji,i->j", y, x_inter, self.coefs_) # y * X @ self.coefs_
             for i in range(n_samples):
                 if z[i] <= 0:
-                    self.coefs_ += y[i] * X[i]
+                    self.coefs_ += y[i] * x_inter[i]
                     self.callback_(self, X[i], y[i])   # callback with intercept=false?
                     break
             else:
@@ -104,9 +105,10 @@ class Perceptron(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
+        x_inter = X.copy()
         if self.include_intercept_:
-            X = np.insert(X, 0, 1, axis=1)
-        calc = np.einsum("ij,j->i", X, self.coefs_)
+            x_inter = np.insert(x_inter, 0, 1, axis=1)
+        calc = np.einsum("ij,j->i", x_inter, self.coefs_)
         return np.sign(calc) + (calc == 0)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:

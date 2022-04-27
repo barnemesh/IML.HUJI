@@ -79,6 +79,8 @@ class LDA(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
+        # TODO: if likelihood adds back normalization -
+        #  then recalculate without?
         return np.take(self.classes_, np.argmax(self.likelihood(X), axis=1))
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
@@ -99,12 +101,13 @@ class LDA(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        # log(pi) + X @ _cov_inv @ mu - diag(0.5 * mu @ cov_inv @ mu)
+        # log(pi) + X @ _cov_inv @ mu.T - diag(0.5 * mu @ cov_inv @ mu)
         log_pi = np.log(self.pi_)
-        z = np.einsum("mn,nj,ji->mi", X, self._cov_inv, self.mu_.T)
-        zz = 0.5 * np.einsum("ij,jk,ki->i", self.mu_, self._cov_inv, self.mu_.T)
-
-        return log_pi + z - zz
+        a = np.einsum("mn,nj,ji->mi", X, self._cov_inv, self.mu_.T)
+        b = 0.5 * np.einsum("ij,jk,ki->i", self.mu_, self._cov_inv, self.mu_.T)
+        # TODO: add back the 1/Z normalization factor?????
+        # z = np.log(np.sqrt(np.pow(2 * np.pi, n_features) * det(self.cov_)))
+        return log_pi + a - b  # - z
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
