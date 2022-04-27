@@ -50,15 +50,18 @@ class LDA(BaseEstimator):
         n_samples, n_features = X.shape
         self.classes_, counts = np.unique(y, return_counts=True)
         self.pi_ = counts / n_samples
+
         self.mu_ = np.zeros((self.classes_.shape[0], n_features))
-        for c, i in enumerate(self.classes_):
-            self.mu_[i] = np.sum(X, where=(y[i] == c), axis=0) / counts[i]
-        z = np.zeros((n_features, n_features))
-        for i in range(n_samples):  #TODO :?????
-            a = (X[i] - self.mu_[np.nonzero(y[i] == self.classes_)])
-            z += a.T @ a
-        self.cov_ = z / n_samples
-        self._cov_inv = np.linalg.inv(self.cov_)
+        for i, c in enumerate(self.classes_):
+            self.mu_[i] = np.sum(X[(y == c)], axis=0) / counts[i]
+
+        z = np.copy(X)
+        for i in range(n_samples):  # TODO :?????
+            a = np.take(self.classes_, y[i])
+            z[i] -= self.mu_[a]
+
+        self.cov_ = np.cov(z, rowvar=False, ddof=counts.shape[0])
+        self._cov_inv = inv(self.cov_)
 
         self.fitted_ = True
 
@@ -76,16 +79,7 @@ class LDA(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        # n_samples, n_features = X.shape
-        # log_pi = np.log(self.pi_)
-        # # TODO TODOTODOTODO
-        # yk = [
-        #     (self._cov_inv @ self.mu_[j]).T @ X[i] +
-        #     log_pi[j] -
-        #     self.mu_[j] @ self._cov_inv @ self.mu_[j] / 2
-        #     for k, j in enumerate(self.classes_) for i in range(n_samples)]
-
-        return np.asarray([self.classes_[k] for k in np.argmax(self.likelihood(X), axis=1)])
+        return np.take(self.classes_, np.argmax(self.likelihood(X), axis=1))
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -105,16 +99,12 @@ class LDA(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        n_samples, n_features = X.shape
+        # log(pi) + X @ _cov_inv @ mu - diag(0.5 * mu @ cov_inv @ mu)
         log_pi = np.log(self.pi_)
-        # TODO TODOTODOTODO
-        likelihoods = np.asarray(
-            [(self._cov_inv @ self.mu_[j]).T @ X[i] +
-            log_pi[j] -
-            self.mu_[j] @ self._cov_inv @ self.mu_[j] / 2
-            for k, j in enumerate(self.classes_) for i in range(n_samples)]
-        )
-        return likelihoods.reshape((n_samples, self.classes_.shape[0]))
+        z = np.einsum("mn,nj,ji->mi", X, self._cov_inv, self.mu_.T)
+        zz = 0.5 * np.einsum("ij,jk,ki->i", self.mu_, self._cov_inv, self.mu_.T)
+
+        return log_pi + z - zz
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

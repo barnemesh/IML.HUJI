@@ -106,7 +106,8 @@ class Perceptron(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.insert(X, 0, 1, axis=1)
-        return np.sign(np.einsum("ij,j->i", X, self.coefs_))
+        calc = np.einsum("ij,j->i", X, self.coefs_)
+        return np.sign(calc) + (calc == 0)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

@@ -90,7 +90,7 @@ def get_ellipse(mu: np.ndarray, cov: np.ndarray):
     xs = (l1 * np.cos(theta) * np.cos(t)) - (l2 * np.sin(theta) * np.sin(t))
     ys = (l1 * np.sin(theta) * np.cos(t)) + (l2 * np.cos(theta) * np.sin(t))
 
-    return go.Scatter(x=mu[0] + xs, y=mu[1] + ys, mode="lines", marker_color="black")
+    return go.Scatter(x=mu[0] + xs, y=mu[1] + ys, mode="lines", marker_color="black", showlegend=False)
 
 
 def compare_gaussian_classifiers():
@@ -106,7 +106,7 @@ def compare_gaussian_classifiers():
         lda.fit(X, y)
         lda_predict = lda.predict(X)
 
-        # raise NotImplementedError() TODO gaus
+        # raise NotImplementedError() TODO gauss
 
         # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
@@ -114,7 +114,8 @@ def compare_gaussian_classifiers():
         from IMLearn.metrics import accuracy
         fig = make_subplots(
             rows=1, cols=2,
-            subplot_titles=["gaus" + f, "lda" + f],
+            subplot_titles=[f"predictions for {f}, using NGB, {np.round(accuracy(y, lda_predict), 3)}",
+                            f"predictions for {f}, using LDA, {np.round(accuracy(y, lda_predict), 3)}"],
         )
         fig.add_traces(
             [
@@ -122,27 +123,41 @@ def compare_gaussian_classifiers():
                            y=X[:, 1],
                            showlegend=False,
                            mode="markers",
-                           marker=dict(
-                               color=lda_predict,
-                               symbol=y#class_symbols[y]
-                               # line=dict(color="black", width=1))
-                           ))
+                           marker=dict(color=lda_predict,
+                                       symbol=y,
+                                       colorscale="tealgrn")
+                           )
             ],
             rows=1, cols=2
         )
-        fig.update_layout(title_text="Title")
-        fig.show()
-        fig.write_image("./Plots/Ex3/lda_gauss_predict_" + f + ".png")
+
         # raise NotImplementedError() TODO gaus
 
         # Add traces for data-points setting symbols and colors
-        raise NotImplementedError()
 
         # Add `X` dots specifying fitted Gaussians' means
-        raise NotImplementedError()
+        fig.add_traces(
+            [
+                go.Scatter(x=lda.mu_[:, 0],
+                           y=lda.mu_[:, 1],
+                           mode="markers",
+                           marker=dict(color="Black",
+                                       symbol="x"),
+                           name=r"fitted \{mu} LDA"
+                           )
+            ],
+            rows=1, cols=2
+        )
 
         # Add ellipses depicting the covariances of the fitted Gaussians
-        raise NotImplementedError()
+        traces = []
+        for mu in lda.mu_:
+            traces.append(get_ellipse(mu, lda.cov_))
+        fig.add_traces(traces, rows=1, cols=2)
+
+        fig.update_layout(title_text="Title", width=1200, height=600)
+        fig.show()
+        fig.write_image("./Plots/Ex3/lda_gauss_predict_" + f + ".png")
 
 
 if __name__ == '__main__':
