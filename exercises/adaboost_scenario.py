@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from IMLearn.learners.metalearners.adaboost import AdaBoost
+from IMLearn.metalearners.adaboost import AdaBoost
 from IMLearn.learners.classifiers import DecisionStump
 from utils import *
 import plotly.graph_objects as go
@@ -38,17 +38,73 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
     return X, y
 
 
-def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
-    (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
+def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
+                              test_size=500):
+    (train_X, train_y) = generate_data(train_size, noise)
+    (test_X, test_y) = generate_data(test_size, noise)
+
+    from sklearn.ensemble import AdaBoostClassifier
+    from IMLearn.metrics import misclassification_error
 
     # Question 1: Train- and test errors of AdaBoost in noiseless case
-    raise NotImplementedError()
+    model = AdaBoost(lambda: DecisionStump(), n_learners)
+    model.fit(train_X, train_y)
+    # train_y = train_y.reshape((5000, 1))
+    # test_y = test_y.reshape((500, 1))
+
+    test_errors = []
+    test_errors2 = []
+    test_errors3 = []
+    train_errors = []
+    train_errors2 = []
+    train_errors3 = []
+
+    for i in range(1, n_learners + 1):
+        sk_ada_samme = AdaBoostClassifier(n_estimators=i, algorithm="SAMME")
+        sk_ada_sammer = AdaBoostClassifier(n_estimators=i)
+        sk_ada_samme.fit(train_X, train_y)
+        sk_ada_sammer.fit(train_X, train_y)
+
+        test_errors.append(model.partial_loss(test_X, test_y, i))
+        train_errors.append(model.partial_loss(train_X, train_y, i))
+
+        test_errors2.append(
+            misclassification_error(test_y, sk_ada_samme.predict(test_X)))
+        train_errors2.append(
+            misclassification_error(train_y, sk_ada_samme.predict(train_X)))
+        test_errors3.append(
+            misclassification_error(test_y, sk_ada_sammer.predict(test_X)))
+        train_errors3.append(
+            misclassification_error(train_y, sk_ada_sammer.predict(train_X)))
+
+    fig = go.Figure(
+        data=[
+            go.Scatter(y=test_errors,
+                       x=list(range(n_learners)),
+                       mode="lines",
+                       name="Test loss"
+                       ),
+            go.Scatter(y=train_errors,
+                       x=list(range(n_learners)),
+                       mode="lines",
+                       name="Train loss"
+                       )
+        ],
+        layout=go.Layout(
+            title=f"AdaBoost loss based on number of learners, noise={noise}",
+            xaxis=dict(title="Number of learners"),
+            yaxis=dict(title="loss")
+        )
+    )
+    fig.write_image(f"./Plots/Ex4/AdaLossLearnerNumberNoise{noise}.png")
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
-    lims = np.array([np.r_[train_X, test_X].min(axis=0), np.r_[train_X, test_X].max(axis=0)]).T + np.array([-.1, .1])
-    raise NotImplementedError()
+    lims = np.array([np.r_[train_X, test_X].min(axis=0),
+                     np.r_[train_X, test_X].max(axis=0)]).T + np.array(
+        [-.1, .1])
 
+    raise NotImplementedError()
     # Question 3: Decision surface of best performing ensemble
     raise NotImplementedError()
 
@@ -58,4 +114,4 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    fit_and_evaluate_adaboost(0)
