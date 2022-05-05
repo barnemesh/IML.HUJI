@@ -57,12 +57,12 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
     fig = go.Figure(
         data=[
             go.Scatter(y=test_errors,
-                       x=list(range(n_learners)),
+                       x=list(range(1, n_learners + 1)),
                        mode="lines",
                        name="Test loss"
                        ),
             go.Scatter(y=train_errors,
-                       x=list(range(n_learners)),
+                       x=list(range(1, n_learners + 1)),
                        mode="lines",
                        name="Train loss"
                        )
@@ -75,6 +75,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
             yaxis=dict(title="loss")
         )
     )
+
     fig.write_image(f"./Plots/Ex4/AdaLossLearnerNumberNoise{noise}.png")
 
     # Question 2: Plotting decision surfaces
@@ -86,7 +87,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
 
     fig = make_subplots(rows=2, cols=2,
                         subplot_titles=[f"{i} learners" for i in T],
-                        horizontal_spacing=0.05, vertical_spacing=0.1
+                        horizontal_spacing=0.05, vertical_spacing=0.05
                         )
 
     m = go.Scatter(x=test_X[:, 0],
@@ -110,12 +111,24 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
             rows=(i // 2) + 1, cols=(i % 2) + 1)
 
     fig.update_layout(
-        width=1000,
-        height=600,
+        width=800,
+        height=900,
         title=rf"$\textbf{{Decision Boundaries Of AdaBoost based on number of learners: noise={noise}}}$",
-        margin=dict(t=100))
+        margin=dict(t=100)
+    ).update_xaxes(
+        matches='x',
+        range=[-1, 1],
+        constrain="domain"
+    ).update_yaxes(
+        matches='y',
+        range=[-1, 1],
+        constrain="domain",
+        scaleanchor="x",
+        scaleratio=1
+    )
 
     fig.write_image(f"./Plots/Ex4/AdaBoostDecisionBoundariesNoise{noise}.png")
+    fig.show()
 
     # Question 3: Decision surface of best performing ensemble
     i = np.argmin(test_errors)
@@ -128,11 +141,22 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
                              showscale=False), m
         ],
         layout=go.Layout(
-            title=f"AdaBoost lowest loss ensemble, noise={noise}."
-                  f"<br>ensemble size={i + 1} , "
-                  f"accuracy={accuracy(test_y, model.partial_predict(test_X, i + 1))}",
+            width=600,
+            height=600,
+            title=f"AdaBoost lowest loss ensemble. noise={noise}.<br>"
+                  f"Ensemble size={i + 1} , "
+                  f"Accuracy={accuracy(test_y, model.partial_predict(test_X, i + 1)):.3f}",
             margin=dict(t=100)
         )
+    )
+    fig.update_xaxes(
+        range=[-1, 1],
+        constrain="domain"
+    ).update_yaxes(
+        range=[-1, 1],
+        constrain="domain",
+        scaleanchor="x",
+        scaleratio=1
     )
     fig.write_image(f"./Plots/Ex4/AdaBoostBestEnsembleNoise{noise}.png")
 
@@ -148,7 +172,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
                        mode="markers",
                        showlegend=False,
                        marker=dict(color=(train_y == 1).astype(int),
-                                   size=(model.D_ / np.max(model.D_)) * 8,
+                                   size=(model.D_ / np.max(model.D_)) * 6,
                                    # size=model.D_,
                                    # sizemode='area',
                                    # sizeref=2.*np.max(model.D_)/(6**2),
@@ -158,8 +182,19 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
                        )
         ],
         layout=go.Layout(
+            width=600,
+            height=600,
             title=f"AdaBoost train set with sample sized by weights, noise={noise}.",
         )
+    )
+    fig.update_xaxes(
+        range=[-1, 1],
+        constrain="domain"
+    ).update_yaxes(
+        range=[-1, 1],
+        constrain="domain",
+        scaleanchor="x",
+        scaleratio=1
     )
     fig.write_image(f"./Plots/Ex4/AdaBoostFullTrainWithWeights{noise}.png")
 
@@ -167,3 +202,4 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
 if __name__ == '__main__':
     np.random.seed(0)
     fit_and_evaluate_adaboost(0)
+    fit_and_evaluate_adaboost(0.4)
