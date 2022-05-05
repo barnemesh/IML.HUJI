@@ -47,14 +47,11 @@ class DecisionStump(BaseEstimator):
         for i in range(n_features):
             for s in {-1, 1}:
                 thr, thr_err = self._find_threshold(X[:, i], y, s)
-                # print(f"{thr} : {thr_err}::{cur_err} : {s}")
                 if thr_err < cur_err:
                     self.threshold_ = thr
                     self.j_ = i
                     self.sign_ = s
                     cur_err = thr_err
-
-        print(f"{cur_err:.3f}")
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -112,20 +109,35 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
-        ind = np.argsort(values)
-        # x = values[ind]
-        cur_thr = 0
-        cur_thr_err = 2
-        for i in range(values.shape[0]):
-            feature = values - values[i]
-            miss = np.abs(labels) * (np.sign(labels) != sign * (np.sign(feature) + (feature == 0)))
-            thr_err = np.sum(miss)# / labels.shape[0]
-            # thr_err = misclassification_error(labels, sign * (np.sign(feature) + (feature == 0)))
-            # print(thr_err)
-            if thr_err < cur_thr_err:
-                cur_thr = values[i]
-                cur_thr_err = thr_err
-        return cur_thr, cur_thr_err
+        # sort the values, and rearrange the labels accordingly
+        sort_idx = np.argsort(values)
+        values, labels = values[sort_idx], labels[sort_idx]
+
+        #  calculate the loss for each threshold=values[i]
+        threshes = np.concatenate(
+            [[-np.inf], (values[1:] + values[:-1]) / 2, [np.inf]])
+        minimal_theta_loss = np.sum(np.abs(labels[np.sign(labels) != sign]))
+        losses = np.append(minimal_theta_loss,
+                           minimal_theta_loss - np.cumsum(labels * sign))
+
+        # return the loss-minimizer threshold and its loss
+        min_loss_idx = np.argmin(losses)
+        return threshes[min_loss_idx], losses[min_loss_idx]
+        #
+        # # ind = np.argsort(values)
+        # # x = values[ind]
+        # cur_thr = 0
+        # cur_thr_err = 2
+        # for i in range(values.shape[0]):
+        #     feature = values - values[i]
+        #     miss = np.abs(labels) * (np.sign(labels) != sign * (
+        #             np.sign(feature) + (feature == 0)))
+        #     thr_err = np.sum(miss)
+        #     # thr_err = misclassification_error(labels, sign * (np.sign(feature) + (feature == 0)))
+        #     if thr_err < cur_thr_err:
+        #         cur_thr = values[i]
+        #         cur_thr_err = thr_err
+        # return cur_thr, cur_thr_err
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

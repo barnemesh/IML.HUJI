@@ -43,39 +43,16 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
     (train_X, train_y) = generate_data(train_size, noise)
     (test_X, test_y) = generate_data(test_size, noise)
 
-    from sklearn.ensemble import AdaBoostClassifier
-    from IMLearn.metrics import misclassification_error
-
     # Question 1: Train- and test errors of AdaBoost in noiseless case
     model = AdaBoost(lambda: DecisionStump(), n_learners)
     model.fit(train_X, train_y)
-    # train_y = train_y.reshape((5000, 1))
-    # test_y = test_y.reshape((500, 1))
 
     test_errors = []
-    test_errors2 = []
-    test_errors3 = []
     train_errors = []
-    train_errors2 = []
-    train_errors3 = []
 
     for i in range(1, n_learners + 1):
-        sk_ada_samme = AdaBoostClassifier(n_estimators=i, algorithm="SAMME")
-        sk_ada_sammer = AdaBoostClassifier(n_estimators=i)
-        sk_ada_samme.fit(train_X, train_y)
-        sk_ada_sammer.fit(train_X, train_y)
-
         test_errors.append(model.partial_loss(test_X, test_y, i))
         train_errors.append(model.partial_loss(train_X, train_y, i))
-
-        test_errors2.append(
-            misclassification_error(test_y, sk_ada_samme.predict(test_X)))
-        train_errors2.append(
-            misclassification_error(train_y, sk_ada_samme.predict(train_X)))
-        test_errors3.append(
-            misclassification_error(test_y, sk_ada_sammer.predict(test_X)))
-        train_errors3.append(
-            misclassification_error(train_y, sk_ada_sammer.predict(train_X)))
 
     fig = go.Figure(
         data=[
@@ -91,6 +68,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
                        )
         ],
         layout=go.Layout(
+            width=1000,
+            height=600,
             title=f"AdaBoost loss based on number of learners, noise={noise}",
             xaxis=dict(title="Number of learners"),
             yaxis=dict(title="loss")
@@ -99,17 +78,90 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
     fig.write_image(f"./Plots/Ex4/AdaLossLearnerNumberNoise{noise}.png")
 
     # Question 2: Plotting decision surfaces
+    symbols = np.array(["circle", "x"])
     T = [5, 50, 100, 250]
     lims = np.array([np.r_[train_X, test_X].min(axis=0),
                      np.r_[train_X, test_X].max(axis=0)]).T + np.array(
         [-.1, .1])
 
-    raise NotImplementedError()
+    fig = make_subplots(rows=2, cols=2,
+                        subplot_titles=[f"{i} learners" for i in T],
+                        horizontal_spacing=0.05, vertical_spacing=0.1
+                        )
+
+    m = go.Scatter(x=test_X[:, 0],
+                   y=test_X[:, 1],
+                   mode="markers",
+                   showlegend=False,
+                   name="Label 1",
+                   marker=dict(color=(test_y == 1).astype(int),
+                               symbol=class_symbols[test_y.astype(int)],
+                               colorscale=[custom[0], custom[-1]],
+                               line=dict(color="black",
+                                         width=1)))
+    for i, t in enumerate(T):
+        fig.add_traces(
+            [
+                decision_surface(lambda x: model.partial_predict(x, t),
+                                 lims[0],
+                                 lims[1],
+                                 showscale=False), m
+            ],
+            rows=(i // 2) + 1, cols=(i % 2) + 1)
+
+    fig.update_layout(
+        width=1000,
+        height=600,
+        title=rf"$\textbf{{Decision Boundaries Of AdaBoost based on number of learners: noise={noise}}}$",
+        margin=dict(t=100))
+
+    fig.write_image(f"./Plots/Ex4/AdaBoostDecisionBoundariesNoise{noise}.png")
+
     # Question 3: Decision surface of best performing ensemble
-    raise NotImplementedError()
+    i = np.argmin(test_errors)
+    from IMLearn.metrics import accuracy
+    fig = go.Figure(
+        data=[
+            decision_surface(lambda x: model.partial_predict(x, i + 1),
+                             lims[0],
+                             lims[1],
+                             showscale=False), m
+        ],
+        layout=go.Layout(
+            title=f"AdaBoost lowest loss ensemble, noise={noise}."
+                  f"<br>ensemble size={i + 1} , "
+                  f"accuracy={accuracy(test_y, model.partial_predict(test_X, i + 1))}",
+            margin=dict(t=100)
+        )
+    )
+    fig.write_image(f"./Plots/Ex4/AdaBoostBestEnsembleNoise{noise}.png")
 
     # Question 4: Decision surface with weighted samples
-    raise NotImplementedError()
+    fig = go.Figure(
+        data=[
+            decision_surface(model.predict,
+                             lims[0],
+                             lims[1],
+                             showscale=False),
+            go.Scatter(x=train_X[:, 0],
+                       y=train_X[:, 1],
+                       mode="markers",
+                       showlegend=False,
+                       marker=dict(color=(train_y == 1).astype(int),
+                                   size=(model.D_ / np.max(model.D_)) * 8,
+                                   # size=model.D_,
+                                   # sizemode='area',
+                                   # sizeref=2.*np.max(model.D_)/(6**2),
+                                   symbol=class_symbols[train_y.astype(int)],
+                                   colorscale=[custom[0], custom[-1]],
+                                   line=dict(color="black", width=1))
+                       )
+        ],
+        layout=go.Layout(
+            title=f"AdaBoost train set with sample sized by weights, noise={noise}.",
+        )
+    )
+    fig.write_image(f"./Plots/Ex4/AdaBoostFullTrainWithWeights{noise}.png")
 
 
 if __name__ == '__main__':
