@@ -123,8 +123,8 @@ class DecisionStump(BaseEstimator):
         # labels that are -sign.
         losses = np.append(all_sign_loss, all_sign_loss + np.cumsum(y * sign))
 
-        min_loss_idx = np.argmin(losses)
-        return x[min_loss_idx], losses[min_loss_idx]
+        min_loss_ind = np.argmin(losses)
+        return x[min_loss_ind], losses[min_loss_ind]
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

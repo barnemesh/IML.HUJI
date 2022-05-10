@@ -54,20 +54,14 @@ class AdaBoost(BaseEstimator):
         self.D_ = np.ones(n_samples) / n_samples
         self.weights_ = np.zeros(self.iterations_)
         self.models_ = []
-        # indices = np.arange(n_samples)
-        # s = indices
         for i in range(self.iterations_):
             self.models_.append(self.wl_())
-            # self.models_[-1].fit(X[s], y[s])
-            # pred = self.models_[-1].predict(X)
             self.models_[-1].fit(X, y * self.D_)
             pred = self.models_[-1].predict(X)
             eps = np.sum(self.D_ * (pred != y))
-            # eps = np.sum(pred != y)
             self.weights_[i] = 0.5 * np.log((1 - eps) / eps)
             self.D_ = self.D_ * np.exp(-y * pred * self.weights_[i])
             self.D_ = self.D_ / np.sum(self.D_)
-            # s = np.random.choice(indices, n_samples, True, self.D_)
 
     def _predict(self, X):
         """

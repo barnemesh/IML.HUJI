@@ -76,7 +76,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
         )
     )
 
-    fig.write_image(f"./Plots/Ex4/AdaLossLearnerNumberNoise{noise}.png")
+    # fig.write_image(f"./Plots/Ex4/AdaLossLearnerNumberNoise{noise}.png")
+    fig.show()
 
     # Question 2: Plotting decision surfaces
     symbols = np.array(["circle", "x"])
@@ -127,7 +128,7 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
         scaleratio=1
     )
 
-    fig.write_image(f"./Plots/Ex4/AdaBoostDecisionBoundariesNoise{noise}.png")
+    # fig.write_image(f"./Plots/Ex4/AdaBoostDecisionBoundariesNoise{noise}.png")
     fig.show()
 
     # Question 3: Decision surface of best performing ensemble
@@ -158,7 +159,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
         scaleanchor="x",
         scaleratio=1
     )
-    fig.write_image(f"./Plots/Ex4/AdaBoostBestEnsembleNoise{noise}.png")
+    # fig.write_image(f"./Plots/Ex4/AdaBoostBestEnsembleNoise{noise}.png")
+    fig.show()
 
     # Question 4: Decision surface with weighted samples
     fig = go.Figure(
@@ -196,7 +198,8 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000,
         scaleanchor="x",
         scaleratio=1
     )
-    fig.write_image(f"./Plots/Ex4/AdaBoostFullTrainWithWeights{noise}.png")
+    # fig.write_image(f"./Plots/Ex4/AdaBoostFullTrainWithWeights{noise}.png")
+    fig.show()
 
 
 if __name__ == '__main__':
