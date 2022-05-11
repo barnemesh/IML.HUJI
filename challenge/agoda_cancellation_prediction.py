@@ -120,29 +120,29 @@ def load_all_weeks():
 
 def preprocessing(full_data):
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
-    full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
-                                                                          'Pay at Check-in': 0})
-    # full_data = pd.get_dummies(full_data, prefix="charge", columns=["charge_option"])
-    # full_data = pd.get_dummies(full_data, prefix="payment_type", columns=["original_payment_type"])
+    # full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
+    #                                                                       'Pay at Check-in': 0})
+    full_data = pd.get_dummies(full_data, prefix="charge", columns=["charge_option"])
+    full_data = pd.get_dummies(full_data, prefix="payment_type", columns=["original_payment_type"])
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
-    full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
-        'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
-    # full_data = pd.get_dummies(full_data, prefix="language", columns=["language"])
-    # full_data = pd.get_dummies(full_data, prefix="payment_method", columns=["original_payment_method"])
-    # full_data = pd.get_dummies(full_data, prefix="payment_currency", columns=["original_payment_currency"])
-    # full_data = pd.get_dummies(full_data, prefix="origin_country", columns=["origin_country_code"])
-    # full_data = pd.get_dummies(full_data, prefix="hotel_country", columns=["hotel_country_code"])
-    # full_data = pd.get_dummies(full_data, prefix="nationality", columns=["customer_nationality"])
-    full_data = full_data.drop([
-        "charge_option",
-        "original_payment_type",
-        "language",
-        "customer_nationality",
-        "hotel_country_code",
-        "original_payment_method",
-        "original_payment_currency",
-        "origin_country_code"
-    ], axis=1)
+    # full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
+    #     'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
+    full_data = pd.get_dummies(full_data, prefix="language", columns=["language"])
+    full_data = pd.get_dummies(full_data, prefix="payment_method", columns=["original_payment_method"])
+    full_data = pd.get_dummies(full_data, prefix="payment_currency", columns=["original_payment_currency"])
+    full_data = pd.get_dummies(full_data, prefix="origin_country", columns=["origin_country_code"])
+    full_data = pd.get_dummies(full_data, prefix="hotel_country", columns=["hotel_country_code"])
+    full_data = pd.get_dummies(full_data, prefix="nationality", columns=["customer_nationality"])
+    # full_data = full_data.drop([
+    #     "charge_option",
+    #     "original_payment_type",
+    #     "language",
+    #     "customer_nationality",
+    #     "hotel_country_code",
+    #     "original_payment_method",
+    #     "original_payment_currency",
+    #     "origin_country_code"
+    # ], axis=1)
 
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
@@ -174,13 +174,13 @@ def preprocessing(full_data):
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
 
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
-    full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
-        'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
-        'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
-        'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
-        'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
-        'Chalet': 20})
-    # full_data = pd.get_dummies(full_data, prefix="accomadation_type", columns=["accommadation_type_name"])
+    # full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
+    #     'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
+    #     'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
+    #     'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
+    #     'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
+    #     'Chalet': 20})
+    full_data = pd.get_dummies(full_data, prefix="accomadation_type", columns=["accommadation_type_name"])
 
     full_data["special_requests"] = full_data["request_nonesmoke"].fillna(0) + full_data["request_latecheckin"].fillna(
         0) \
@@ -232,11 +232,11 @@ def preprocessing(full_data):
     full_data = full_data.drop([
         "cancellation_policy_code",
         "guest_nationality_country_name",
-        "hotel_brand_code",
+        "hotel_brand_code",  # TODO: hotel identity features seemed to be important - should try to keep these 2.
         "h_booking_id",
         "hotel_id",
         "h_customer_id",
-        "accommadation_type_name"
+        # "accommadation_type_name"
     ], axis=1)
     features = full_data
     return features, p_full_data
@@ -325,60 +325,60 @@ if __name__ == '__main__':
     # forest2 = DecisionTreeClassifier()
     # b = forest2.cost_complexity_pruning_path(X_train_all, y_train_all.astype(bool))
 
-    og_est_b = AgodaCancellationEstimator(balanced=True)
-    og_est_b.fit(X_train, y_train.astype(bool))
-
-    og_est = AgodaCancellationEstimator()
-    og_est.fit(X_train, y_train.astype(bool))
-
-    wk_est_b = AgodaCancellationEstimator(balanced=True)
-    wk_est_b.fit(X_train_wk, y_train_wk.astype(bool))
-
-    wk_est = AgodaCancellationEstimator()
-    wk_est.fit(X_train_wk, y_train_wk.astype(bool))
+    # og_est_b = AgodaCancellationEstimator(balanced=True)
+    # og_est_b.fit(X_train, y_train.astype(bool))
+    #
+    # og_est = AgodaCancellationEstimator()
+    # og_est.fit(X_train, y_train.astype(bool))
+    #
+    # wk_est_b = AgodaCancellationEstimator(balanced=True)
+    # wk_est_b.fit(X_train_wk, y_train_wk.astype(bool))
+    #
+    # wk_est = AgodaCancellationEstimator()
+    # wk_est.fit(X_train_wk, y_train_wk.astype(bool))
 
     all_est_b = AgodaCancellationEstimator(balanced=True)
     all_est_b.fit(X_train_all, y_train_all.astype(bool))
 
-    all_est = AgodaCancellationEstimator()
-    all_est.fit(X_train_all, y_train_all.astype(bool))
+    # all_est = AgodaCancellationEstimator()
+    # all_est.fit(X_train_all, y_train_all.astype(bool))
 
-    print("############ Original Data Balanced ################")
-    print("%% On Original test %%")
-    print(confusion_matrix(y_test.astype(bool), og_est_b.predict(X_test)))
-    print(classification_report(y_test.astype(bool), og_est_b.predict(X_test)))
-    print("%% On New Data %%")
-    print(confusion_matrix(responses_prev.astype(bool), og_est_b.predict(df_prev)))
-    print(classification_report(responses_prev.astype(bool), og_est_b.predict(df_prev)))
+    # print("############ Original Data Balanced ################")
+    # print("%% On Original test %%")
+    # print(confusion_matrix(y_test.astype(bool), og_est_b.predict(X_test)))
+    # print(classification_report(y_test.astype(bool), og_est_b.predict(X_test)))
+    # print("%% On New Data %%")
+    # print(confusion_matrix(responses_prev.astype(bool), og_est_b.predict(df_prev)))
+    # print(classification_report(responses_prev.astype(bool), og_est_b.predict(df_prev)))
 
-    print("############ Original Data UnBalanced ################")
-    print("%% On Original test %%")
-    print(confusion_matrix(y_test.astype(bool), og_est.predict(X_test)))
-    print(classification_report(y_test.astype(bool), og_est.predict(X_test)))
-    print("%% On New Data %%")
-    print(confusion_matrix(responses_prev.astype(bool), og_est.predict(df_prev)))
-    print(classification_report(responses_prev.astype(bool), og_est.predict(df_prev)))
+    # print("############ Original Data UnBalanced ################")
+    # print("%% On Original test %%")
+    # print(confusion_matrix(y_test.astype(bool), og_est.predict(X_test)))
+    # print(classification_report(y_test.astype(bool), og_est.predict(X_test)))
+    # print("%% On New Data %%")
+    # print(confusion_matrix(responses_prev.astype(bool), og_est.predict(df_prev)))
+    # print(classification_report(responses_prev.astype(bool), og_est.predict(df_prev)))
 
-    print("############ New Data Balanced ################")
-    print("%% On New Data Test %%")
-    print(confusion_matrix(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
-    print(classification_report(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
+    # print("############ New Data Balanced ################")
+    # print("%% On New Data Test %%")
+    # print(confusion_matrix(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
+    # print(classification_report(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
 
-    print("############ New Data UnBalanced ################")
-    print("%% On New Data Test %%")
-    print(confusion_matrix(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
-    print(classification_report(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
+    # print("############ New Data UnBalanced ################")
+    # print("%% On New Data Test %%")
+    # print(confusion_matrix(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
+    # print(classification_report(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
 
     print("############ All Data Balanced ################")
     print("%% On All Data Test %%")
     print(confusion_matrix(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
     print(classification_report(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
 
-    print("############ All Data UnBalanced ################")
-    print("%% On All Data Test %%")
-    print(confusion_matrix(y_test_all.astype(bool), all_est.predict(X_test_all)))
-    print(classification_report(y_test_all.astype(bool), all_est.predict(X_test_all)))
+    # print("############ All Data UnBalanced ################")
+    # print("%% On All Data Test %%")
+    # print(confusion_matrix(y_test_all.astype(bool), all_est.predict(X_test_all)))
+    # print(classification_report(y_test_all.astype(bool), all_est.predict(X_test_all)))
 
     # Store model predictions over test set
     # real = load_test("./Test_sets/test_set_week_5.csv")
-    # evaluate_and_export(og_est, real, "312245087_312162464_316514314.csv")
+    # evaluate_and_export(all_est_b, real, "312245087_312162464_316514314.csv")
