@@ -120,29 +120,29 @@ def load_all_weeks():
 
 def preprocessing(full_data):
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
-    # full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
-    #                                                                       'Pay at Check-in': 0})
-    full_data = pd.get_dummies(full_data, prefix="charge", columns=["charge_option"])
-    full_data = pd.get_dummies(full_data, prefix="payment_type", columns=["original_payment_type"])
+    full_data["charge_option_numbered"] = full_data["charge_option"].map({"Pay Now": 2, "Pay Later": 1,
+                                                                          'Pay at Check-in': 0})
+    # full_data = pd.get_dummies(full_data, prefix="charge", columns=["charge_option"])
+    # full_data = pd.get_dummies(full_data, prefix="payment_type", columns=["original_payment_type"])
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
-    # full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
-    #     'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
-    full_data = pd.get_dummies(full_data, prefix="language", columns=["language"])
-    full_data = pd.get_dummies(full_data, prefix="payment_method", columns=["original_payment_method"])
-    full_data = pd.get_dummies(full_data, prefix="payment_currency", columns=["original_payment_currency"])
-    full_data = pd.get_dummies(full_data, prefix="origin_country", columns=["origin_country_code"])
-    full_data = pd.get_dummies(full_data, prefix="hotel_country", columns=["hotel_country_code"])
-    full_data = pd.get_dummies(full_data, prefix="nationality", columns=["customer_nationality"])
-    # full_data = full_data.drop([
-    #     "charge_option",
-    #     "original_payment_type",
-    #     "language",
-    #     "customer_nationality",
-    #     "hotel_country_code",
-    #     "original_payment_method",
-    #     "original_payment_currency",
-    #     "origin_country_code"
-    # ], axis=1)
+    full_data["original_payment_type_proccessed"] = full_data["original_payment_type"].map({
+        'Invoice': 1, 'Credit Card': 0, 'Gift Card': 2})
+    # full_data = pd.get_dummies(full_data, prefix="language", columns=["language"])
+    # full_data = pd.get_dummies(full_data, prefix="payment_method", columns=["original_payment_method"])
+    # full_data = pd.get_dummies(full_data, prefix="payment_currency", columns=["original_payment_currency"])
+    # full_data = pd.get_dummies(full_data, prefix="origin_country", columns=["origin_country_code"])
+    # full_data = pd.get_dummies(full_data, prefix="hotel_country", columns=["hotel_country_code"])
+    # full_data = pd.get_dummies(full_data, prefix="nationality", columns=["customer_nationality"])
+    full_data = full_data.drop([
+        "charge_option",
+        "original_payment_type",
+        "language",
+        "customer_nationality",
+        "hotel_country_code",
+        "original_payment_method",
+        "original_payment_currency",
+        "origin_country_code"
+    ], axis=1)
 
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
@@ -174,13 +174,13 @@ def preprocessing(full_data):
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
 
     # TODO: this give "value" to the type, should be dummies, but what do we do with missing dummies?
-    # full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
-    #     'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
-    #     'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
-    #     'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
-    #     'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
-    #     'Chalet': 20})
-    full_data = pd.get_dummies(full_data, prefix="accomadation_type", columns=["accommadation_type_name"])
+    full_data["accommadation_type_name_proccessed"] = full_data["accommadation_type_name"].map({
+        'Hotel': 0, 'Resort': 1, 'Serviced Apartment': 2, 'Guest House / Bed & Breakfast': 3,
+        'Hostel': 4, 'Capsule Hotel': 5, 'Home': 6, 'Apartment': 7, 'Bungalow': 8, 'Motel': 9, 'Ryokan': 10,
+        'Tent': 11, 'Resort Villa': 12, 'Love Hotel': 13, 'Holiday Park / Caravan Park': 14,
+        'Private Villa': 15, 'Boat / Cruise': 16, 'UNKNOWN': 21, 'Inn': 17, 'Lodge': 18, 'Homestay': 19,
+        'Chalet': 20})
+    # full_data = pd.get_dummies(full_data, prefix="accomadation_type", columns=["accommadation_type_name"])
 
     full_data["special_requests"] = full_data["request_nonesmoke"].fillna(0) + full_data["request_latecheckin"].fillna(
         0) \
@@ -236,7 +236,7 @@ def preprocessing(full_data):
         "h_booking_id",
         "hotel_id",
         "h_customer_id",
-        # "accommadation_type_name"
+        "accommadation_type_name"
     ], axis=1)
     features = full_data
     return features, p_full_data
@@ -379,6 +379,38 @@ if __name__ == '__main__':
     # print(confusion_matrix(y_test_all.astype(bool), all_est.predict(X_test_all)))
     # print(classification_report(y_test_all.astype(bool), all_est.predict(X_test_all)))
 
-    # Store model predictions over test set
-    # real = load_test("./Test_sets/test_set_week_5.csv")
-    # evaluate_and_export(all_est_b, real, "312245087_312162464_316514314.csv")
+    est = AgodaCancellationEstimator(balanced=True)
+    est.fit(df, responses.astype(bool))
+    df1 = load_prev_data_separate("./Test_sets/test_set_week_1.csv", "./Labels/test_set_week_1_labels.csv")
+    df2 = load_prev_data_separate("./Test_sets/test_set_week_2.csv", "./Labels/test_set_labels_week_2.csv")
+    df3 = load_prev_data_separate("./Test_sets/test_set_week_3.csv", "./Labels/test_set_week_3_labels.csv")
+    df4 = load_prev_data_separate("./Test_sets/test_set_week_4.csv", "./Labels/test_set_week_4_labels.csv")
+    features, p_full_data = preprocessing(df1)
+    labels = p_full_data["cancellation_bool"]
+    features = features.drop(["cancellation_bool"], axis=1)
+    print("############ Original One Week At A TIme ################")
+    print(confusion_matrix(labels.astype(bool), est.predict(features)))
+    print(classification_report(labels.astype(bool), est.predict(features)))
+    features, p_full_data = preprocessing(df2)
+    labels = p_full_data["cancellation_bool"]
+    features = features.drop(["cancellation_bool"], axis=1)
+    print(confusion_matrix(labels.astype(bool), est.predict(features)))
+    print(classification_report(labels.astype(bool), est.predict(features)))
+    features, p_full_data = preprocessing(df3)
+    labels = p_full_data["cancellation_bool"]
+    features = features.drop(["cancellation_bool"], axis=1)
+    print(confusion_matrix(labels.astype(bool), est.predict(features)))
+    print(classification_report(labels.astype(bool), est.predict(features)))
+    features, p_full_data = preprocessing(df4)
+    labels = p_full_data["cancellation_bool"]
+    features = features.drop(["cancellation_bool"], axis=1)
+    print(confusion_matrix(labels.astype(bool), est.predict(features)))
+    print(classification_report(labels.astype(bool), est.predict(features)))
+
+    print(confusion_matrix(responses_prev.astype(bool), est.predict(df_prev)))
+    print(classification_report(responses_prev.astype(bool), est.predict(df_prev)))
+
+    # # Store model predictions over test set
+    # real = load_test("./Test_sets/test_set_week_6.csv")
+    # a = est.estimator.predict_proba(real)
+    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")

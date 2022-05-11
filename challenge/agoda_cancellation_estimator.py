@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import NoReturn
 from IMLearn.base import BaseEstimator
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, HistGradientBoostingClassifier, \
+    ExtraTreesClassifier, BaggingClassifier
+from sklearn.linear_model import LogisticRegression, RidgeClassifierCV, LogisticRegressionCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, classification_report
@@ -29,13 +30,18 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.PROB_LIMIT2 = 0.5
 
         if balanced:
-            self.estimator = RandomForestClassifier(class_weight="balanced")
-            # self.logistic = LogisticRegression(class_weight="balanced")
-            # self.SGD = SGDClassifier(class_weight="balanced", loss="modified_huber")
+            # TODO: try KCV
+            self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            # self.estimator2 = LogisticRegressionCV(Cs=[0.00005, 0.0001, 0.001, 0.01, 0.1, 1], class_weight="balanced", scoring="f1_macro")
+            # self.estimator2 = LogisticRegression(class_weight="balanced")
+            # self.estimator2 = RidgeClassifierCV(alphas=[0.00005, 0.0001, 0.001, 0.01, 0.1, 1], scoring="f1_macro")
+            self.estimator2 = AdaBoostClassifier()
+            # self.estimator2 = BaggingClassifier()
+            self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
         else:
-            self.estimator = AdaBoostClassifier()
-            # self.logistic = LogisticRegression()
-            # self.SGD = SGDClassifier(loss="modified_huber")
+            self.estimator = RandomForestClassifier()
+            self.estimator2 = AdaBoostClassifier()
+            self.estimator3 = ExtraTreesClassifier()
         # self.gradient = GradientBoostingClassifier()
         # self.neural = MLPClassifier()
 
@@ -52,6 +58,8 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
         """
         self.estimator.fit(X, y)
+        self.estimator2.fit(X, y)
+        self.estimator3.fit(X, y)
         # self.logistic.fit(X, y)
         # self.SGD.fit(X, y)
         # self.gradient.fit(X, y)
@@ -70,32 +78,36 @@ class AgodaCancellationEstimator(BaseEstimator):
             Predicted responses of given samples
         """
 
-        return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
-        # pred2 = self.logistic.predict_proba(X)
-        # # pred2 = self.neural.predict_proba(X)
-        # pred3 = self.gradient.predict_proba(X)
-        # # pred3 = self.SGD.predict_proba(X)
-        #
-        # result = []
-        # for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
-        #     if bol[1] > self.PROB_LIMIT:
-        #         vote1 = True
-        #     else:
-        #         vote1 = False
-        #
-        #     if bol1[1] > self.PROB_LIMIT1:
-        #         vote2 = True
-        #     else:
-        #         vote2 = False
-        #
-        #     if bol2[1] > self.PROB_LIMIT2:
-        #         vote3 = True
-        #     else:
-        #         vote3 = False
-        #
-        #     result.append((vote1 and (vote2 or vote3) or (vote2 and vote3)))
-        #
-        # return np.array(result)
+        # return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
+        # pred1 = self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT
+        # pred2 = self.estimator2.predict_proba(X)[:, 1] >= self.PROB_LIMIT1
+        # pred3 = self.estimator3.predict_proba(X)[:, 1] >= self.PROB_LIMIT2
+        # return np.array((pred3.astype(int) + pred2.astype(int) + pred1.astype(int)) >= 2)
+        pred1 = self.estimator.predict_proba(X)#[:, 1] >= self.PROB_LIMIT
+        pred2 = self.estimator2.predict_proba(X)#[:, 1] >= self.PROB_LIMIT1
+        pred3 = self.estimator3.predict_proba(X)#[:, 1] >= self.PROB_LIMIT2
+        # pred3 = self.SGD.predict_proba(X)
+
+        result = []
+        for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
+            if bol[1] > self.PROB_LIMIT:
+                vote1 = True
+            else:
+                vote1 = False
+
+            if bol1[1] > self.PROB_LIMIT1:
+                vote2 = True
+            else:
+                vote2 = False
+
+            if bol2[1] > self.PROB_LIMIT2:
+                vote3 = True
+            else:
+                vote3 = False
+
+            result.append((vote1 and (vote2 or vote3) or (vote2 and vote3)))
+
+        return np.array(result)
 
     def set_probs(self, p1, p2, p3):
         self.PROB_LIMIT = p1
