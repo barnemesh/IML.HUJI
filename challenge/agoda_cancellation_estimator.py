@@ -31,17 +31,22 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         if balanced:
             # TODO: try KCV
-            self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            self.PROB_LIMIT1 = 0.65
+            # self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0002)
+            self.estimator = RandomForestClassifier(class_weight={0: 0.52, 1: 14}, ccp_alpha=0.0001)
             # self.estimator2 = LogisticRegressionCV(Cs=[0.00005, 0.0001, 0.001, 0.01, 0.1, 1], class_weight="balanced", scoring="f1_macro")
             # self.estimator2 = LogisticRegression(class_weight="balanced")
             # self.estimator2 = RidgeClassifierCV(alphas=[0.00005, 0.0001, 0.001, 0.01, 0.1, 1], scoring="f1_macro")
             self.estimator2 = AdaBoostClassifier()
-            # self.estimator2 = BaggingClassifier()
+            # self.estimator2 = BaggingClassifier(base_estimator=HistGradientBoostingClassifier())
             self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            # self.estimator3 = ExtraTreesClassifier(class_weight={0: 0.52, 1: 14}, ccp_alpha=0.0001)
         else:
-            self.estimator = RandomForestClassifier()
+            self.PROB_LIMIT = 0.65
+            self.PROB_LIMIT2 = 0.65
+            self.estimator = RandomForestClassifier(ccp_alpha=0.0001)
             self.estimator2 = AdaBoostClassifier()
-            self.estimator3 = ExtraTreesClassifier()
+            self.estimator3 = ExtraTreesClassifier(ccp_alpha=0.0001)
         # self.gradient = GradientBoostingClassifier()
         # self.neural = MLPClassifier()
 
@@ -83,9 +88,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         # pred2 = self.estimator2.predict_proba(X)[:, 1] >= self.PROB_LIMIT1
         # pred3 = self.estimator3.predict_proba(X)[:, 1] >= self.PROB_LIMIT2
         # return np.array((pred3.astype(int) + pred2.astype(int) + pred1.astype(int)) >= 2)
-        pred1 = self.estimator.predict_proba(X)#[:, 1] >= self.PROB_LIMIT
-        pred2 = self.estimator2.predict_proba(X)#[:, 1] >= self.PROB_LIMIT1
-        pred3 = self.estimator3.predict_proba(X)#[:, 1] >= self.PROB_LIMIT2
+        pred1 = self.estimator.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT
+        pred2 = self.estimator2.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT1
+        pred3 = self.estimator3.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT2
         # pred3 = self.SGD.predict_proba(X)
 
         result = []
