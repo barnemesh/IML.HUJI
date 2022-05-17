@@ -252,9 +252,12 @@ def preprocessing(full_data, encoder=None):
                                                    x["TimeDiff"],
                                                    x["original_selling_amount"]), axis=1)
 
-    full_data["booking_datetime_day"] = full_data["booking_datetime"].dt.dayofyear
-    # full_data["booking_datetime_month_delta"] = full_data["checkin_date"].dt.month - full_data["booking_datetime"].dt.month
-    full_data["checkin_date_day"] = full_data["checkin_date"].dt.dayofyear
+    full_data["booking_datetime_day"] = full_data["booking_datetime"].dt.day
+    full_data["booking_datetime_month_delta"] = full_data["checkin_date"].dt.month - full_data["booking_datetime"].dt.month
+    full_data["booking_datetime_month_delta"] = full_data["booking_datetime_month_delta"].mask(
+            full_data["booking_datetime_month_delta"] < 0, full_data["booking_datetime_month_delta"] + 12
+        )
+    full_data["checkin_date_day"] = full_data["checkin_date"].dt.day
     full_data["checkout_date_delta"] = (full_data["checkout_date"] - full_data["checkin_date"]).dt.days
     # full_data["hotel_live_date"] = full_data["hotel_live_date"].dt.dayofyear
     # full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)
@@ -365,8 +368,8 @@ if __name__ == '__main__':
 
     # Load data
     df, responses, encoder = load_data("../datasets/agoda_cancellation_train.csv")
-    df_prev, responses_prev, encoder = load_weeks_3(encoder)
-    # df_prev, responses_prev, encoder = load_all_weeks(encoder)
+    # df_prev, responses_prev, encoder = load_weeks_3(encoder)
+    df_prev, responses_prev, encoder = load_all_weeks(encoder)
     X_train, X_test, y_train, y_test = train_test_split(df, responses, test_size=0.25)
     X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
@@ -492,16 +495,16 @@ if __name__ == '__main__':
     # # TODO: fill na here is shadowing bad preprocessing
     # df3 = df3.fillna(0)
     # resp3 = pd.concat([responses, resp3], ignore_index=True)
-    df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
-    features, p_full_data, encoder = preprocessing(df5, encoder)
-    labels = p_full_data["cancellation_bool"]
-    features = features.drop(["cancellation_bool"], axis=1)
-
-    est_wk_3 = AgodaCancellationEstimator(balanced=True)
-    est_wk_3.fit(df_all, responses_all.astype(bool))
-    print(confusion_matrix(labels.astype(bool), est_wk_3.predict(features)))
-    print(classification_report(labels.astype(bool), est_wk_3.predict(features)))
-    a = np.array([est_wk_3.estimator.feature_importances_, est_wk_3.estimator.feature_names_in_])
+    # df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
+    # features, p_full_data, encoder = preprocessing(df5, encoder)
+    # labels = p_full_data["cancellation_bool"]
+    # features = features.drop(["cancellation_bool"], axis=1)
+    #
+    # est_wk_3 = AgodaCancellationEstimator(balanced=True)
+    # est_wk_3.fit(df_all, responses_all.astype(bool))
+    # print(confusion_matrix(labels.astype(bool), est_wk_3.predict(features)))
+    # print(classification_report(labels.astype(bool), est_wk_3.predict(features)))
+    # a = np.array([est_wk_3.estimator.feature_importances_, est_wk_3.estimator.feature_names_in_])
 
     # # Store model predictions over test set
     # real = load_test("./Test_sets/test_set_week_5.csv")
