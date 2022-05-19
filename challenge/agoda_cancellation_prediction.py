@@ -74,7 +74,7 @@ def load_data(filename: str):
         full_data["cancel_month_day"] > 14, False)
 
     full_data["cancellation_days_after_booking"] = \
-        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) - # TODO::
+        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) -  # TODO::
          full_data['booking_datetime']).dt.days
 
     full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
@@ -124,7 +124,7 @@ def load_prev_data_separate(test: str, label: str):
 
     labels_only = pd.read_csv(label)
     full_data["cancellation_bool"] = labels_only["cancel"]
-    full_data.drop_duplicates()
+    full_data = full_data.drop_duplicates()
 
     return full_data
 
@@ -188,7 +188,7 @@ def preprocessing(full_data, encoder=None):
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
 
     categoricals = [
-        # "guest_nationality_country_name_processed",
+        "guest_nationality_country_name_processed",
         "charge_option",
         # "original_payment_type",
         # "accommadation_type_name"
@@ -196,7 +196,7 @@ def preprocessing(full_data, encoder=None):
     full_data = full_data.drop(
         [
             "accommadation_type_name",
-            "guest_nationality_country_name_processed",
+            # "guest_nationality_country_name_processed",
             # "charge_option",
             "original_payment_type",
 
@@ -238,7 +238,13 @@ def preprocessing(full_data, encoder=None):
 
     # TODO: this one is important!
     full_data['TimeDiff'] = (full_data['checkin_date'] - full_data['booking_datetime']).dt.days
-    full_data["num_nights"] = (full_data["checkout_date"] - full_data["checkin_date"]).dt.days - 1
+    full_data["TimeDiff"] = full_data["TimeDiff"].mask(
+        full_data["TimeDiff"] < 0, 0
+    )
+    full_data["Nights_delta"] = (full_data["checkout_date"] - full_data["checkin_date"]).dt.days - 1
+    full_data["Nights_delta"] = full_data["Nights_delta"].mask(
+        full_data["Nights_delta"] < 0, 0
+    )
 
     # full_data["booking_datetime_day"] = full_data["booking_datetime"].dt.day
     full_data["booking_datetime_month_delta"] = full_data["checkin_date"].dt.month - full_data[
@@ -256,11 +262,13 @@ def preprocessing(full_data, encoder=None):
     # full_data["checkin_date"] = full_data["checkin_date"].map(dt.datetime.toordinal)
     # full_data["checkout_date"] = full_data["checkout_date"].map(dt.datetime.toordinal)
 
-    # TODO: this one is important!
-    full_data["cancellation_policy_numbered"] = \
-        full_data.apply(lambda x: transform_policy(x["cancellation_policy_code"],
-                                                   x["TimeDiff"],
-                                                   x["original_selling_amount"]), axis=1)
+    full_data["before_period_fine"] = np.zeros(full_data.shape[0], dtype=int)
+    full_data["in_period_fine"] = np.zeros(full_data.shape[0], dtype=int)
+    full_data["after_period_fine"] = np.zeros(full_data.shape[0], dtype=int)
+    full_data = full_data.apply(transform_policy, axis=1)
+    # full_data["before_period_fine"] = full_data["before_period_fine"] * full_data["original_selling_amount"]
+    # full_data["in_period_fine"] = full_data["in_period_fine"] * full_data["original_selling_amount"]
+    # full_data["after_period_fine"] = full_data["after_period_fine"] * full_data["original_selling_amount"]
 
     full_data["hotel_live_date"] = full_data["hotel_live_date"].map(dt.datetime.toordinal)
     full_data = full_data.drop([
@@ -292,39 +300,56 @@ def load_test(filename: str, encoder):
     return features
 
 
-regex = r"""([\d])([D|P])([\d])([N|P])"""
+def calculate_fine(nights_percent, num, nights):
+    if nights_percent == "N":
+        nights = nights if nights != 0 else 1
+        return np.floor(100 * num / nights)
+
+    elif nights_percent == "P":
+        return num
+
+    else:
+        return 0
 
 
-def transform_policy(policy, nights, cost):
-    matches = re.findall(regex, policy)
+regex = r"""([\d]+)([D|P|N])([\d]*)([N|P]?)"""
 
-    result = 0
+
+def transform_policy(data):
+    matches = re.findall(regex, data["cancellation_policy_code"])
+
+    closest_after = np.NINF
 
     for match in matches:
+        match = list(filter(lambda x: x != "", match))
+
         if len(match) == 2:
-            result += (int(match[0]) / 100) * cost
-        else:
-            if match[0] == "0":
-                divider = 1
-            else:
-                divider = int(match[0])
+            match = [0, "D"] + match
 
-            if match[3] == 'N':
+        if len(match) == 4:
+            if data["TimeDiff"] - int(match[0]) < 7:
+                data["before_period_fine"] = np.max([calculate_fine(match[3], int(match[2]), data["Nights_delta"]),
+                                                     data["before_period_fine"]])
 
-                if nights == 0:
-                    nights_divider = 1
-                else:
-                    nights_divider = nights
-                policy_cost = divider * (int(match[2]) / nights_divider) * cost
+            elif (data["TimeDiff"] - int(match[0])) >= 7 and (data["TimeDiff"] - int(match[0]) <= 30):
+                data["in_period_fine"] = np.max([calculate_fine(match[3], int(match[2]), data["Nights_delta"]),
+                                                 data["in_period_fine"]])
 
             else:
-                policy_cost = divider * (int(match[2]) / 100) * cost
+                if int(match[0]) >= closest_after:
+                    data["after_period_fine"] = np.max([calculate_fine(match[3], int(match[2]), data["Nights_delta"]),
+                                                        data["after_period_fine"]])
 
-            if policy_cost > result:
-                result = policy_cost
+                    closest_after = int(match[0])
 
-    return result
+    data["in_period_fine"] = np.max([data["in_period_fine"],
+                                    data["before_period_fine"]])
 
+    data["after_period_fine"] = np.max([data["in_period_fine"],
+                                        data["after_period_fine"],
+                                        data["before_period_fine"]])
+
+    return data
 
 def evaluate_and_export(estimator  #: BaseEstimator,
                         , X: np.ndarray, filename: str):
@@ -348,15 +373,16 @@ def testings(df, responses, encoder):
     # df_prev, responses_prev, encoder = load_weeks_3(encoder)
     df_prev, responses_prev, encoder = load_all_weeks(encoder)
     X_train, X_test, y_train, y_test = train_test_split(df, responses, test_size=0.25)
-    # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
-    # df_all = pd.concat([df, df_prev], ignore_index=True)
+    X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
+    df_all = pd.concat([df, df_prev], ignore_index=True)
     # df_all = df_all.fillna(0)
-    # responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    # X_train_all, X_test_all, y_train_all, y_test_all = train_test_split(df_all, responses_all, test_size=0.25)
+    responses_all = pd.concat([responses, responses_prev], ignore_index=True)
+    X_train_all, X_test_all, y_train_all, y_test_all = train_test_split(df_all, responses_all, test_size=0.25)
     # forest = DecisionTreeClassifier(class_weight="balanced")
     # a = forest.cost_complexity_pruning_path(X_train, y_train.astype(bool))
     # dict_a = np.array([a.ccp_alphas, a.impurities])
     # print(dict_a)
+
     og_est_b = AgodaCancellationEstimator(balanced=True)
     og_est_b.fit(X_train, y_train.astype(bool))
     # a = np.array([og_est_b.estimator.feature_importances_, og_est_b.estimator.feature_names_in_])
@@ -369,8 +395,10 @@ def testings(df, responses, encoder):
     #
     # wk_est = AgodaCancellationEstimator()
     # wk_est.fit(X_train_wk, y_train_wk.astype(bool))
-    # all_est_b = AgodaCancellationEstimator(balanced=True)
-    # all_est_b.fit(X_train_all, y_train_all.astype(bool))
+
+    all_est_b = AgodaCancellationEstimator(balanced=True)
+    all_est_b.fit(X_train_all, y_train_all.astype(bool))
+
     # all_est = AgodaCancellationEstimator()
     # all_est.fit(X_train_all, y_train_all.astype(bool))
     # df4 = load_prev_data_separate("./Test_sets/test_set_week_4.csv", "./Labels/test_set_week_4_labels.csv")
@@ -408,6 +436,9 @@ def testings(df, responses, encoder):
     # print(classification_report(responses_prev.astype(bool), og_est.predict(df_prev)))
 
     # print("############ New Data Balanced ################")
+    # print("%% On Original Data")
+    # print(confusion_matrix(responses.astype(bool), wk_est_b.predict(df)))
+    # print(classification_report(responses.astype(bool), wk_est_b.predict(df)))
     # print("%% On New Data Test %%")
     # print(confusion_matrix(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
     # print(classification_report(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
@@ -417,10 +448,10 @@ def testings(df, responses, encoder):
     # print(confusion_matrix(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
     # print(classification_report(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
 
-    # print("############ All Data Balanced ################")
-    # print("%% On All Data Test %%")
-    # print(confusion_matrix(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
-    # print(classification_report(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
+    print("############ All Data Balanced ################")
+    print("%% On All Data Test %%")
+    print(confusion_matrix(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
+    print(classification_report(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
 
     # print("############ All Data UnBalanced ################")
     # print("%% On All Data Test %%")
@@ -436,6 +467,7 @@ def testings(df, responses, encoder):
     # features, p_full_data = preprocessing(df1)
     # labels = p_full_data["cancellation_bool"]
     # features = features.drop(["cancellation_bool"], axis=1)
+
     # print("############ Original One Week At A TIme ################")
     # print(confusion_matrix(labels.astype(bool), est.predict(features)))
     # print(classification_report(labels.astype(bool), est.predict(features)))
@@ -449,14 +481,18 @@ def testings(df, responses, encoder):
     # features = features.drop(["cancellation_bool"], axis=1)
     # print(confusion_matrix(labels.astype(bool), est.predict(features)))
     # print(classification_report(labels.astype(bool), est.predict(features)))
-    # features, p_full_data = preprocessing(df4)
+
+    # df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
+    # # est = AgodaCancellationEstimator(balanced=True)
+    # # est.fit(df_all, responses_all.astype(bool))
+    # features, p_full_data, encoder = preprocessing(df5, encoder)
     # labels = p_full_data["cancellation_bool"]
     # features = features.drop(["cancellation_bool"], axis=1)
-    # print(confusion_matrix(labels.astype(bool), est.predict(features)))
-    # print(classification_report(labels.astype(bool), est.predict(features)))
-    #
-    # print(confusion_matrix(responses_prev.astype(bool), est.predict(df_prev)))
-    # print(classification_report(responses_prev.astype(bool), est.predict(df_prev)))
+    # print("############ New Data Balanced ################")
+    # print("%% On Last Week %%")
+    # print(confusion_matrix(labels.astype(bool), wk_est_b.predict(features)))
+    # print(classification_report(labels.astype(bool), wk_est_b.predict(features)))
+
     #
     # df3, resp3 = load_weeks_3()
     # df3 = pd.concat([df, df3], ignore_index=True)
@@ -477,17 +513,16 @@ def testings(df, responses, encoder):
 if __name__ == '__main__':
     np.random.seed(0)
     # Load data
-    df, responses, encoder = load_data("../datasets/agoda_cancellation_train.csv")
-    # df_prev, responses_prev, encoder = load_all_weeks(encoder)
+    df, responses, encoder = load_data("./agoda_cancellation_train.csv")
+    df_prev, responses_prev, encoder = load_all_weeks(encoder)
     # X_train, X_test, y_train, y_test = train_test_split(df, responses, test_size=0.25)
     # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
-    # df_all = pd.concat([df, df_prev], ignore_index=True)
-    # df_all = df_all.fillna(0)
-    testings(df, responses, encoder)
+    df_all = pd.concat([df, df_prev], ignore_index=True)
+    responses_all = pd.concat([responses, responses_prev], ignore_index=True)
+    # testings(df, responses, encoder)
 
-    # est = AgodaCancellationEstimator(balanced=True)
-    # est.fit(df, responses.astype(bool))
-    # # Store model predictions over test set
-    # real = load_test("./Test_sets/week_6_test_data.csv", encoder)
-    # # a = all_est_b.estimator.predict_proba(real)
-    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
+    est = AgodaCancellationEstimator(balanced=True)
+    est.fit(df_all, responses_all.astype(bool))
+    # Store model predictions over test set
+    real = load_test("./Test_sets/week_6_test_data.csv", encoder)
+    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")

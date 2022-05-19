@@ -31,21 +31,11 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         if balanced:
             # TODO: try grid search
-            self.estimator = RandomForestClassifier(n_estimators=150, class_weight="balanced", ccp_alpha=0.0001)
-            # self.estimator2 = RidgeClassifierCV(alphas=(0.000005, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10),
-            #                                     class_weight="balanced",
-            #                                     # scoring="f1_macro"
-            #                                     # scoring="balanced_accuracy"
-            #                                     )
-            self.estimator2 = AdaBoostClassifier(n_estimators=100)
-            self.estimator3 = ExtraTreesClassifier(n_estimators=150, class_weight="balanced", ccp_alpha=0.0001)
+            self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            self.estimator2 = AdaBoostClassifier()
+            self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
         else:
             self.estimator = RandomForestClassifier(ccp_alpha=0.0001)
-            # self.estimator2 = RidgeClassifierCV(alphas=(0.00001, 0.0001, 0.0002, 0.001, 0.01, 0.1, 1, 10)
-            #                                     # ,class_weight="balanced",
-            #                                     # scoring="f1_macro"
-            #                                     # scoring="balanced_accuracy"
-            #                                     )
             self.estimator2 = AdaBoostClassifier()
             self.estimator3 = ExtraTreesClassifier(ccp_alpha=0.0001)
 
