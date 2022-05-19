@@ -74,17 +74,17 @@ def load_data(filename: str):
         full_data["cancel_month_day"] > 14, False)
 
     full_data["cancellation_days_after_booking"] = \
-        (full_data['cancellation_datetime'].fillna(full_data["checkin_date"]) - # TODO::
+        (full_data['cancellation_datetime'].fillna(full_data["booking_datetime"]) - # TODO::
          full_data['booking_datetime']).dt.days
 
     full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
         full_data["cancellation_days_after_booking"] < 7, 100)
 
     full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
-        (full_data["cancellation_days_after_booking"] < 45), True)
+        (full_data["cancellation_days_after_booking"] < 36), True)
 
     full_data["cancellation_days_after_booking"] = full_data["cancellation_days_after_booking"].mask(
-        full_data["cancellation_days_after_booking"] > 44, False)
+        full_data["cancellation_days_after_booking"] > 35, False)
 
     full_data = full_data.drop(['cancellation_datetime'], axis=1)
 
@@ -188,15 +188,20 @@ def preprocessing(full_data, encoder=None):
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
 
     categoricals = [
-        "guest_nationality_country_name_processed",
+        # "guest_nationality_country_name_processed",
         "charge_option",
-        "original_payment_type",
-        "accommadation_type_name"
+        # "original_payment_type",
+        # "accommadation_type_name"
     ]
     full_data = full_data.drop(
         [
-            "hotel_chain_code",  # TODO drop this?
-            "hotel_brand_code",  # TODO: hotel identity features seemed to be important - should try to keep these 2?
+            "accommadation_type_name",
+            "guest_nationality_country_name_processed",
+            # "charge_option",
+            "original_payment_type",
+
+            "hotel_chain_code",
+            "hotel_brand_code",
             "language",
             "customer_nationality",
             "hotel_country_code",
@@ -348,13 +353,13 @@ def testings(df, responses, encoder):
     # df_all = df_all.fillna(0)
     # responses_all = pd.concat([responses, responses_prev], ignore_index=True)
     # X_train_all, X_test_all, y_train_all, y_test_all = train_test_split(df_all, responses_all, test_size=0.25)
-    forest = DecisionTreeClassifier(class_weight="balanced")
+    # forest = DecisionTreeClassifier(class_weight="balanced")
     # a = forest.cost_complexity_pruning_path(X_train, y_train.astype(bool))
     # dict_a = np.array([a.ccp_alphas, a.impurities])
     # print(dict_a)
     og_est_b = AgodaCancellationEstimator(balanced=True)
     og_est_b.fit(X_train, y_train.astype(bool))
-    a = np.array([og_est_b.estimator.feature_importances_, og_est_b.estimator.feature_names_in_])
+    # a = np.array([og_est_b.estimator.feature_importances_, og_est_b.estimator.feature_names_in_])
 
     # og_est = AgodaCancellationEstimator()
     # og_est.fit(X_train, y_train.astype(bool))
