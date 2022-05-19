@@ -30,25 +30,22 @@ class AgodaCancellationEstimator(BaseEstimator):
         self.PROB_LIMIT2 = 0.5
 
         if balanced:
-            # TODO: try KCV
-            # self.PROB_LIMIT1 = 0.65
+            # TODO: try grid search
             self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
-            # self.estimator = RandomForestClassifier(class_weight={0: 0.52, 1: 14}, ccp_alpha=0.0001)
-            # self.estimator2 = LogisticRegressionCV(Cs=[0.00005, 0.0001, 0.001, 0.01, 0.1, 1], class_weight="balanced", scoring="f1_macro")
-            # self.estimator2 = LogisticRegression(class_weight="balanced")
-            # self.estimator2 = RidgeClassifierCV(alphas=[0.00005, 0.0001, 0.001, 0.01, 0.1, 1], scoring="f1_macro")
-            self.estimator2 = AdaBoostClassifier()
-            # self.estimator2 = BaggingClassifier(base_estimator=HistGradientBoostingClassifier())
+            self.estimator2 = RidgeClassifierCV(alphas=(0.00001, 0.0001, 0.0002, 0.001, 0.01, 0.1, 1, 10),
+                                                class_weight="balanced",
+                                                scoring="f1_macro"
+                                                # scoring="balanced_accuaracy"
+                                                )
             self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
-            # self.estimator3 = ExtraTreesClassifier(class_weight={0: 0.52, 1: 14}, ccp_alpha=0.0001)
         else:
-            # self.PROB_LIMIT = 0.
-            # self.PROB_LIMIT2 = 0.65
             self.estimator = RandomForestClassifier(ccp_alpha=0.0001)
-            self.estimator2 = AdaBoostClassifier()
+            self.estimator2 = RidgeClassifierCV(alphas=(0.00001, 0.0001, 0.0002, 0.001, 0.01, 0.1, 1, 10)
+                                                # ,class_weight="balanced",
+                                                # scoring="f1_macro"
+                                                # scoring="balanced_accuaracy"
+                                                )
             self.estimator3 = ExtraTreesClassifier(ccp_alpha=0.0001)
-        # self.gradient = GradientBoostingClassifier()
-        # self.neural = MLPClassifier()
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -89,7 +86,8 @@ class AgodaCancellationEstimator(BaseEstimator):
         # pred3 = self.estimator3.predict_proba(X)[:, 1] >= self.PROB_LIMIT2
         # return np.array((pred3.astype(int) + pred2.astype(int) + pred1.astype(int)) >= 2)
         pred1 = self.estimator.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT
-        pred2 = self.estimator2.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT1
+        pred2 = self.estimator2.predict(X)
+        # pred2 = self.estimator2.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT1
         pred3 = self.estimator3.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT2
         # pred3 = self.SGD.predict_proba(X)
 
