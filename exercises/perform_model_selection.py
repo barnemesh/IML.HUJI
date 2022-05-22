@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import pandas as pd
+import sklearn.datasets
 from sklearn import datasets
 from IMLearn.metrics import mean_square_error
 from IMLearn.utils import split_train_test
@@ -110,7 +111,6 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     print(f"Deg {k} Validation MSE: {np.round(validation_errors[k], 2)}.")
 
 
-
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
     """
     Using sklearn's diabetes dataset use cross-validation to select the best fitting regularization parameter
@@ -125,19 +125,103 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
         Number of regularization parameter values to evaluate for each of the algorithms
     """
     # Question 6 - Load diabetes dataset and split into training and testing portions
-    raise NotImplementedError()
+    X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
+    frac = n_samples / X.shape[0]
+    X_train, y_train, X_test, y_test = split_train_test(X, y, frac)
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    raise NotImplementedError()
+    lams = np.linspace(0, 1, n_evaluations)
+    train_errors = []
+    validation_errors = []
+    for i in range(n_evaluations):
+        est = RidgeRegression(lams[i])
+        t_error, v_error = cross_validate(est, X_train.to_numpy(), y_train.to_numpy(), mean_square_error)
+        train_errors.append(t_error)
+        validation_errors.append(v_error)
+    ridge_lowest = lams[np.argmin(validation_errors)]
+
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=lams,
+                y=train_errors,
+                mode="markers",
+                name="Train Error Average",
+                marker=dict(color=custom[0][0])
+            ),
+            go.Scatter(
+                x=lams,
+                y=validation_errors,
+                mode="markers",
+                name="Validation Error Average",
+                marker=dict(color=custom[0][-1])
+            )
+        ],
+        layout=go.Layout(
+            title="Q2.2.7",
+            xaxis=dict(title="Lambda"),
+            yaxis=dict(title="MSE")
+        )
+    )
+    fig.write_image(f"./Plots/Ex5/Ridge5FoldErrors.png")
+
+    train_errors = []
+    validation_errors = []
+    for i in range(n_evaluations):
+        est = Lasso(alpha=lams[i])
+        t_error, v_error = cross_validate(est, X_train.to_numpy(), y_train.to_numpy(), mean_square_error)
+        train_errors.append(t_error)
+        validation_errors.append(v_error)
+
+    lasso_lowest = lams[np.argmin(validation_errors)]
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=lams,
+                y=train_errors,
+                mode="markers",
+                name="Train Error Average",
+                marker=dict(color=custom[0][0])
+            ),
+            go.Scatter(
+                x=lams,
+                y=validation_errors,
+                mode="markers",
+                name="Validation Error Average",
+                marker=dict(color=custom[0][-1])
+            )
+        ],
+        layout=go.Layout(
+            title="Q2.2.7",
+            xaxis=dict(title="Lambda"),
+            yaxis=dict(title="MSE")
+        )
+    )
+    fig.write_image(f"./Plots/Ex5/Lasso5FoldErrors.png")
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
-    raise NotImplementedError()
+    lin = LinearRegression()
+    ridge = RidgeRegression(ridge_lowest)
+    lasso = Lasso(alpha=lasso_lowest)
+    lin.fit(X_train.to_numpy(), y_train.to_numpy())
+    ridge.fit(X_train.to_numpy(), y_train.to_numpy())
+    lasso.fit(X_train.to_numpy(), y_train.to_numpy())
+
+    print(f"Ridge Lowest Lambda: {ridge_lowest}")
+    print(f"Lasso Lowest Lambda: {lasso_lowest}")
+
+    print(f"Ridge fitted over {ridge_lowest} MSE: {ridge.loss(X_test.to_numpy(), y_test.to_numpy())}")
+    lasso_error = mean_square_error(y_test.to_numpy(), lasso.predict(X_test.to_numpy()))
+    print(f"Lasso fitted over {lasso_lowest} MSE: {lasso_error}")
+    print(f"Least Squares MSE: {lin.loss(X_test.to_numpy(), y_test.to_numpy())}")
 
 
 if __name__ == '__main__':
+    # np.random.seed(0)
+    # select_polynomial_degree()
+    # np.random.seed(0)
+    # select_polynomial_degree(noise=0)
+    # np.random.seed(0)
+    # select_polynomial_degree(n_samples=1500, noise=10)
     np.random.seed(0)
-    select_polynomial_degree()
-    np.random.seed(0)
-    select_polynomial_degree(noise=0)
-    np.random.seed(0)
-    select_polynomial_degree(n_samples=1500, noise=10)
+    select_regularization_parameter()
