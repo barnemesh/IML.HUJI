@@ -33,9 +33,9 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
         return (x + 3) * (x + 2) * (x + 1) * (x - 1) * (x - 2)
 
     samples = np.linspace(-1.2, 2, n_samples)
-    labels = f(samples)
+    labels_no_noise = f(samples)
     eps = np.random.normal(loc=0, scale=noise, size=n_samples)
-    labels += eps
+    labels = eps + labels_no_noise
 
     X_train, y_train, X_test, y_test = split_train_test(pd.DataFrame(samples), pd.Series(labels), 2.0 / 3.0)
     X_train, y_train = X_train.to_numpy()[:, 0], y_train.to_numpy()
@@ -45,21 +45,28 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
         data=[
             go.Scatter(
                 x=X_train,
-                y=f(X_train),
+                y=y_train,
                 mode="markers",
                 name="Train Samples",
                 marker=dict(color=custom[0][0])
             ),
             go.Scatter(
                 x=X_test,
-                y=f(X_test),
+                y=y_test,
                 mode="markers",
                 name="Test Samples",
                 marker=dict(color=custom[0][-1])
+            ),
+            go.Scatter(
+                x=samples,
+                y=labels_no_noise,
+                mode="markers",
+                name="No Noise",
+                marker=dict(color=custom[-1][-1])
             )
         ],
         layout=go.Layout(
-            title="Q2.1.1",
+            title=f"Q2.1.1 - {n_samples} Samples Distribution with noise={noise}",
             xaxis=dict(title="samples"),
             yaxis=dict(title="Noiseless")
         )
@@ -93,7 +100,7 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
             )
         ],
         layout=go.Layout(
-            title="Q2.1.2",
+            title=f"Q2.1.2 - Error per different Polynomial degree, Noise={noise}",
             xaxis=dict(title="K deg of polynomial"),
             yaxis=dict(title="MSE")
         )
@@ -158,7 +165,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
             )
         ],
         layout=go.Layout(
-            title="Q2.2.7",
+            title="Q2.2.7 - Ridge 5-Fold errors as factor of Lambda",
             xaxis=dict(title="Lambda"),
             yaxis=dict(title="MSE")
         )
@@ -193,7 +200,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
             )
         ],
         layout=go.Layout(
-            title="Q2.2.7",
+            title="Q2.2.7 - Lasso 5-Fold errors as factor of Lambda",
             xaxis=dict(title="Lambda"),
             yaxis=dict(title="MSE")
         )
