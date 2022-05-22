@@ -25,31 +25,35 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     noise: float, default = 5
         Noise level to simulate in responses
     """
+
     # Question 1 - Generate dataset for model f(x)=(x+3)(x+2)(x+1)(x-1)(x-2) + eps for eps Gaussian noise
     # and split into training- and testing portions
     def f(x):
-        return (x+3) * (x+2) * (x+1) * (x-1) * (x-2)
+        return (x + 3) * (x + 2) * (x + 1) * (x - 1) * (x - 2)
 
     samples = np.linspace(-1.2, 2, n_samples)
-    labels = f(samples) + np.random.default_rng().normal(loc=0, scale=noise, size=n_samples)
+    labels = f(samples)
+    eps = np.random.default_rng().normal(loc=0, scale=noise, size=n_samples)
+    labels += eps
 
-    X_train, y_train, X_test, y_test = split_train_test(samples.reshape(-1, 1), labels, 2.0/3.0)
+    X_train, y_train, X_test, y_test = split_train_test(pd.DataFrame(samples), pd.Series(labels), 2.0 / 3.0)
+    # X_train, y_train, X_test, y_test = split_train_test(samples.reshape(-1, 1), labels, 2.0/3.0)
 
     fig = go.Figure(
         data=[
             go.Scatter(
-                x=X_train,
-                y=f(X_train),
+                x=X_train.to_numpy()[:, 0],
+                y=f(X_train.to_numpy()[:, 0]),
                 mode="markers",
                 name="Train Samples",
-                marker=dict(color=class_colors[0])
+                marker=dict(color=custom[0][0])
             ),
             go.Scatter(
-                x=X_test,
-                y=f(X_test),
+                x=X_test.to_numpy()[:, 0],
+                y=f(X_test.to_numpy()[:, 0]),
                 mode="markers",
                 name="Test Samples",
-                marker=dict(color=class_colors[1])
+                marker=dict(color=custom[0][-1])
             )
         ],
         layout=go.Layout(
