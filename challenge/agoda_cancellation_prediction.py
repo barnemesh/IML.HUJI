@@ -523,6 +523,14 @@ if __name__ == '__main__':
 
     est = AgodaCancellationEstimator(balanced=True)
     est.fit(df_all, responses_all.astype(bool))
+    df6 = load_prev_data_separate("./Test_sets/week_6_test_data.csv", "./Labels/week_6_labels.csv")
+    features, p_full_data, encoder = preprocessing(df6, encoder)
+    labels = p_full_data["cancellation_bool"]
+    features = features.drop(["cancellation_bool"], axis=1)
+    print("############ On Last Week ################")
+    print("%% On Last Week %%")
+    print(confusion_matrix(labels.astype(bool), est.predict(features)))
+    print(classification_report(labels.astype(bool), est.predict(features)))
     # Store model predictions over test set
-    real = load_test("./Test_sets/week_6_test_data.csv", encoder)
-    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
+    # real = load_test("./Test_sets/week_6_test_data.csv", encoder)
+    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
