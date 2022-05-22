@@ -27,7 +27,38 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     """
     # Question 1 - Generate dataset for model f(x)=(x+3)(x+2)(x+1)(x-1)(x-2) + eps for eps Gaussian noise
     # and split into training- and testing portions
-    raise NotImplementedError()
+    def f(x):
+        return (x+3) * (x+2) * (x+1) * (x-1) * (x-2)
+
+    samples = np.linspace(-1.2, 2, n_samples)
+    labels = f(samples) + np.random.default_rng().normal(loc=0, scale=noise, size=n_samples)
+
+    X_train, y_train, X_test, y_test = split_train_test(samples.reshape(-1, 1), labels, 2.0/3.0)
+
+    fig = go.Figure(
+        data=[
+            go.Scatter(
+                x=X_train,
+                y=f(X_train),
+                mode="markers",
+                name="Train Samples",
+                marker=dict(color=class_colors[0])
+            ),
+            go.Scatter(
+                x=X_test,
+                y=f(X_test),
+                mode="markers",
+                name="Test Samples",
+                marker=dict(color=class_colors[1])
+            )
+        ],
+        layout=go.Layout(
+            title="Q2.1.1",
+            xaxis=dict(title="samples"),
+            yaxis=dict(title="Noiseless")
+        )
+    )
+    fig.write_image(f"./Plots/Ex5/TrueNoiselessModelSplit.png")
 
     # Question 2 - Perform CV for polynomial fitting with degrees 0,1,...,10
     raise NotImplementedError()
@@ -61,4 +92,4 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
-    raise NotImplementedError()
+    select_polynomial_degree()

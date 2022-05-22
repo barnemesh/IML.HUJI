@@ -37,4 +37,18 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     validation_score: float
         Average validation score over folds
     """
-    raise NotImplementedError()
+    # n_samples, n_features = X.shape
+    folds = np.array_split(X, cv)  # TODO: split indices instead, and use them?
+    labels = np.array_split(y, cv)
+    train_scores = []
+    validation_scores = []
+    for i in range(cv):
+        folds_without_i = folds[:i] + folds[i+1:]
+        labels_without_i = labels[:i] + labels[i+1:]
+        x_i = np.concatenate(folds_without_i)
+        y_i = np.concatenate(labels_without_i)
+        estimator.fit(x_i, y_i)
+        train_scores.append(scoring(y_i, estimator.predict(x_i)))
+        validation_scores.append(scoring(labels[i], estimator.predict(folds[i])))
+
+    return np.mean(train_scores), np.mean(validation_scores)
