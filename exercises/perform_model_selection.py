@@ -165,6 +165,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     )
     fig.write_image(f"./Plots/Ex5/Ridge5FoldErrors.png")
 
+    lams = np.linspace(0.05, 1, n_evaluations)
     train_errors = []
     validation_errors = []
     for i in range(n_evaluations):
@@ -217,11 +218,11 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 
 if __name__ == '__main__':
-    # np.random.seed(0)
-    # select_polynomial_degree()
-    # np.random.seed(0)
-    # select_polynomial_degree(noise=0)
-    # np.random.seed(0)
-    # select_polynomial_degree(n_samples=1500, noise=10)
+    np.random.seed(0)
+    select_polynomial_degree()
+    np.random.seed(0)
+    select_polynomial_degree(noise=0)
+    np.random.seed(0)
+    select_polynomial_degree(n_samples=1500, noise=10)
     np.random.seed(0)
     select_regularization_parameter()
