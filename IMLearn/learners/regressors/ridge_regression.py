@@ -61,11 +61,16 @@ class RidgeRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        samples = X.copy() # TODO: use the enhanced version from the recitation with delegate for linear
+        samples = X.copy()  # TODO: use the enhanced version from the recitation with delegate for linear
         if self.include_intercept_:
             samples = np.insert(samples, 0, 1, axis=1)
         u, s, vh = np.linalg.svd(samples, full_matrices=False)
-        s = s / (s * s + self.lam_)
+        if self.include_intercept_:
+            temp = s[0]
+            s = s / (s * s + self.lam_)
+            s[0] = 1 / temp
+        else:
+            s = s / (s * s + self.lam_)
         self.coefs_ = vh.T @ np.diag(s) @ u.T @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
