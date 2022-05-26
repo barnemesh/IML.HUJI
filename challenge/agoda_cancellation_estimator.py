@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import NoReturn
 from IMLearn.base import BaseEstimator
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, HistGradientBoostingClassifier, \
-    ExtraTreesClassifier, BaggingClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, \
+    HistGradientBoostingClassifier, \
+    ExtraTreesClassifier, BaggingClassifier, StackingClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifierCV, LogisticRegressionCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
@@ -25,6 +26,7 @@ class AgodaCancellationEstimator(BaseEstimator):
         ----------
         """
         super().__init__()
+        self.balanced = balanced
         self.PROB_LIMIT = 0.5
         self.PROB_LIMIT1 = 0.5
         self.PROB_LIMIT2 = 0.5
@@ -32,12 +34,15 @@ class AgodaCancellationEstimator(BaseEstimator):
         if balanced:
             # TODO: try grid search
             self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
-            self.estimator2 = AdaBoostClassifier()
+            # self.estimator2 = AdaBoostClassifier(n_estimators=75, algorithm="SAMME")
+            self.estimator2 = BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)
             self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
         else:
-            self.estimator = RandomForestClassifier(ccp_alpha=0.0001)
-            self.estimator2 = AdaBoostClassifier()
-            self.estimator3 = ExtraTreesClassifier(ccp_alpha=0.0001)
+            estimators = [('ada', AdaBoostClassifier()),
+                          ('rForestBal', RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)),
+                          ('extraBal', ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)),
+                          ]
+            self.estimator = StackingClassifier(estimators=estimators)
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -52,8 +57,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         -----
         """
         self.estimator.fit(X, y)
-        self.estimator2.fit(X, y)
-        self.estimator3.fit(X, y)
+        if self.balanced:
+            self.estimator2.fit(X, y)
+            self.estimator3.fit(X, y)
         # self.logistic.fit(X, y)
         # self.SGD.fit(X, y)
         # self.gradient.fit(X, y)
@@ -71,8 +77,8 @@ class AgodaCancellationEstimator(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-
-        # return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
+        if not self.balanced:
+            return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
         # pred1 = self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT
         # pred2 = self.estimator2.predict_proba(X)[:, 1] >= self.PROB_LIMIT1
         # pred3 = self.estimator3.predict_proba(X)[:, 1] >= self.PROB_LIMIT2
