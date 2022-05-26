@@ -153,7 +153,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
                 x=lams,
                 y=train_errors,
                 mode="markers",
-                name="Train Error Average",
+                name=rf"$\textbf{{Train Error Average}}$",
                 marker=dict(color=custom[0][0])
             ),
             go.Scatter(
@@ -165,12 +165,13 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
             )
         ],
         layout=go.Layout(
-            title="Q2.2.7 - Ridge 5-Fold errors as factor of Lambda",
-            xaxis=dict(title="Lambda"),
-            yaxis=dict(title="MSE")
+            title=rf"$\textbf{{Q2.2.7}} - \text{{Ridge 5-Fold errors as factor of Lambda}}$",
+            xaxis=dict(title=r"$\lambda$"),
+            yaxis=dict(title=r"$MSE$")
         )
     )
     fig.write_image(f"./Plots/Ex5/Ridge5FoldErrors.png")
+    fig.show()
 
     lams = np.linspace(0.05, 1.05, n_evaluations)
     train_errors = []
