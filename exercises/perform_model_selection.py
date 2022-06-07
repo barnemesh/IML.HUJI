@@ -47,28 +47,28 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
                 x=X_train,
                 y=y_train,
                 mode="markers",
-                name="Train Samples",
+                name=r"$\text{Train Samples}$",
                 marker=dict(color=custom[0][0])
             ),
             go.Scatter(
                 x=X_test,
                 y=y_test,
                 mode="markers",
-                name="Test Samples",
+                name=r"$\text{Test Samples}$",
                 marker=dict(color=custom[0][-1])
             ),
             go.Scatter(
                 x=samples,
                 y=labels_no_noise,
                 mode="markers",
-                name="No Noise",
+                name=r"$\text{No Noise}$",
                 marker=dict(color=custom[-1][-1])
             )
         ],
         layout=go.Layout(
-            title=f"Q2.1.1 - {n_samples} Samples Distribution with noise={noise}",
-            xaxis=dict(title="Samples"),
-            yaxis=dict(title="Values")
+            title=rf"$\textbf{{Q2.1.1}} - \text{{{n_samples} Samples Distribution with noise={noise}}}$",
+            xaxis=dict(title=r"$\text{Samples}$"),
+            yaxis=dict(title=r"$\text{Values}$")
         )
     )
     fig.write_image(f"./Plots/Ex5/TrueNoiselessModelSplitNoise{noise}.png")
@@ -88,21 +88,21 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
                 x=[k for k in range(11)],
                 y=train_errors,
                 mode="markers",
-                name="Train Error Average",
+                name=r"$\text{Train Error Average}$",
                 marker=dict(color=custom[0][0])
             ),
             go.Scatter(
                 x=[k for k in range(11)],
                 y=validation_errors,
                 mode="markers",
-                name="Validation Error Average",
+                name=r"$\text{Validation Error Average}$",
                 marker=dict(color=custom[0][-1])
             )
         ],
         layout=go.Layout(
-            title=f"Q2.1.2 - Error per different Polynomial degree, Noise={noise}",
-            xaxis=dict(title="K deg of polynomial"),
-            yaxis=dict(title="MSE")
+            title=rf"$\textbf{{Q2.1.2}} - \text{{Error per different Polynomial degree, Noise={noise}}}$",
+            xaxis=dict(title=r"$\text{K deg of polynomial}$"),
+            yaxis=dict(title=r"$\text{MSE}$")
         )
     )
     fig.write_image(f"./Plots/Ex5/Polynomial5FoldErrorsNoise{noise}.png")
@@ -153,19 +153,19 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
                 x=lams,
                 y=train_errors,
                 mode="markers",
-                name=rf"$\textbf{{Train Error Average}}$",
+                name=r"$\text{Train Error Average}$",
                 marker=dict(color=custom[0][0])
             ),
             go.Scatter(
                 x=lams,
                 y=validation_errors,
                 mode="markers",
-                name="Validation Error Average",
+                name=r"$\text{Validation Error Average}$",
                 marker=dict(color=custom[0][-1])
             )
         ],
         layout=go.Layout(
-            title=rf"$\textbf{{Q2.2.7}} - \text{{Ridge 5-Fold errors as factor of Lambda}}$",
+            title=rf"$\textbf{{Q2.2.7}} - \text{{Ridge 5-Fold errors as factor of }}\lambda$",
             xaxis=dict(title=r"$\lambda$"),
             yaxis=dict(title=r"$MSE$")
         )
@@ -189,21 +189,21 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
                 x=lams,
                 y=train_errors,
                 mode="markers",
-                name="Train Error Average",
+                name=r"$\text{Train Error Average}$",
                 marker=dict(color=custom[0][0])
             ),
             go.Scatter(
                 x=lams,
                 y=validation_errors,
                 mode="markers",
-                name="Validation Error Average",
+                name=r"$\text{Validation Error Average}$",
                 marker=dict(color=custom[0][-1])
             )
         ],
         layout=go.Layout(
-            title="Q2.2.7 - Lasso 5-Fold errors as factor of Lambda",
-            xaxis=dict(title="Lambda"),
-            yaxis=dict(title="MSE")
+            title=r"$\textbf{Q2.2.7} - \text{Lasso 5-Fold errors as factor of }\lambda$",
+            xaxis=dict(title=r"$\lambda$"),
+            yaxis=dict(title=r"$MSE$")
         )
     )
     fig.write_image(f"./Plots/Ex5/Lasso5FoldErrors.png")
