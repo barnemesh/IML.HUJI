@@ -541,6 +541,13 @@ if __name__ == '__main__':
     est.fit(df_all, responses_all.astype(bool))
     est.set_probs(0.6, 0.4, 0.7)
 
+    df7 = load_prev_data_separate("./Test_sets/week_7_test_data.csv", "./Labels/week_7_labels.csv")
+    features, p_full_data, encoder = preprocessing(df7, encoder)
+    labels = p_full_data["cancellation_bool"]
+    features = features.drop(["cancellation_bool"], axis=1)
+    print("%% On Week 7 %%")
+    print(confusion_matrix(labels.astype(bool), est.predict(features)))
+    print(classification_report(labels.astype(bool), est.predict(features), digits=8))
     # Store model predictions over test set
-    real = load_test("./Test_sets/week_7_test_data.csv", encoder)
-    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
+    # real = load_test("./Test_sets/week_7_test_data.csv", encoder)
+    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
