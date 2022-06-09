@@ -4,7 +4,7 @@ from IMLearn.base import BaseEstimator
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, \
     HistGradientBoostingClassifier, \
-    ExtraTreesClassifier, BaggingClassifier, StackingClassifier
+    ExtraTreesClassifier, BaggingClassifier, StackingClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifierCV, LogisticRegressionCV
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
@@ -38,11 +38,11 @@ class AgodaCancellationEstimator(BaseEstimator):
             self.estimator2 = BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)
             self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
         else:
-            estimators = [('ada', AdaBoostClassifier()),
-                          ('rForestBal', RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)),
-                          ('extraBal', ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)),
+            estimators = [('rf', RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)),
+                          ('bag', BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)),
+                          ('et', ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001))
                           ]
-            self.estimator = StackingClassifier(estimators=estimators)
+            self.estimator = VotingClassifier(estimators=estimators, voting="soft")
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -60,10 +60,6 @@ class AgodaCancellationEstimator(BaseEstimator):
         if self.balanced:
             self.estimator2.fit(X, y)
             self.estimator3.fit(X, y)
-        # self.logistic.fit(X, y)
-        # self.SGD.fit(X, y)
-        # self.gradient.fit(X, y)
-        # self.neural.fit(X, y)
 
     def _predict(self, X: np.ndarra) -> np.ndarray:
         """
@@ -79,16 +75,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         """
         if not self.balanced:
             return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
-        # pred1 = self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT
-        # pred2 = self.estimator2.predict_proba(X)[:, 1] >= self.PROB_LIMIT1
-        # pred3 = self.estimator3.predict_proba(X)[:, 1] >= self.PROB_LIMIT2
-        # return np.array((pred3.astype(int) + pred2.astype(int) + pred1.astype(int)) >= 2)
         pred1 = self.estimator.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT
-        # pred2 = self.estimator2.predict(X)
-        # pred2 = np.array([pred2, pred2]).T
         pred2 = self.estimator2.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT1
         pred3 = self.estimator3.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT2
-        # pred3 = self.SGD.predict_proba(X)
 
         result = []
         for (bol, bol1, bol2) in zip(pred1, pred2, pred3):
@@ -112,9 +101,12 @@ class AgodaCancellationEstimator(BaseEstimator):
         return np.array(result)
 
     def set_probs(self, p1, p2, p3):
-        self.PROB_LIMIT = p1
-        self.PROB_LIMIT1 = p2
-        self.PROB_LIMIT2 = p3
+        if not self.balanced:
+            self.estimator.set_params(weights=[p1, p2, p3])
+        else:
+            self.PROB_LIMIT = p1
+            self.PROB_LIMIT1 = p2
+            self.PROB_LIMIT2 = p3
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

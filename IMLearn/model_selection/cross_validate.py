@@ -1,5 +1,4 @@
 from __future__ import annotations
-from copy import deepcopy
 from typing import Tuple, Callable
 import numpy as np
 from IMLearn import BaseEstimator
@@ -37,18 +36,17 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     validation_score: float
         Average validation score over folds
     """
-    # n_samples, n_features = X.shape
-    folds = np.array_split(X, cv)  # TODO: split indices instead, and use them?
-    labels = np.array_split(y, cv)
-    train_scores = []
-    validation_scores = []
-    for i in range(cv):
-        folds_without_i = folds[:i] + folds[i+1:]
-        labels_without_i = labels[:i] + labels[i+1:]
-        x_i = np.concatenate(folds_without_i)
-        y_i = np.concatenate(labels_without_i)
-        estimator.fit(x_i, y_i)
-        train_scores.append(scoring(y_i, estimator.predict(x_i)))
-        validation_scores.append(scoring(labels[i], estimator.predict(folds[i])))
+    indexes = np.arange(0, X.shape[0], step=1)
+    np.random.shuffle(indexes)
+    train_score = []
+    validation_score = []
 
-    return np.mean(train_scores), np.mean(validation_scores)
+    for fold_indexes in np.array_split(indexes, cv):
+        X_train = np.delete(X, fold_indexes, axis=0)
+        y_train = np.delete(y, fold_indexes, axis=0)
+
+        estimator.fit(X_train, y_train)
+        train_score.append(scoring(y_train, estimator.predict(X_train)))
+        validation_score.append(scoring(y[fold_indexes], estimator.predict(X[fold_indexes])))
+
+    return np.mean(train_score), np.mean(validation_score)

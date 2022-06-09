@@ -411,14 +411,14 @@ def testings(df, responses, encoder):
     # est.fit(df_all, responses_all.astype(bool))
     # all_est_b.fit(df_all, responses_all.astype(bool))
 
-    def f1_macro(y_true, y_pred):
-        return f1_score(y_true, y_pred, average="macro")
-    print("All Balanced")
-    print(cross_validate(all_est_b, df_all, responses_all.astype(bool), f1_macro, cv=2))
-    print("Voting")
-    print(cross_validate(est, df_all, responses_all.astype(bool), f1_macro, cv=2))
-    print("Stacking")
-    print(cross_validate(est_stack, df_all, responses_all.astype(bool), f1_macro, cv=2))
+    # def f1_macro(y_true, y_pred):
+    #     return f1_score(y_true, y_pred, average="macro")
+    # print("All Balanced")
+    # print(cross_validate(all_est_b, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
+    # print("Voting")
+    # print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
+    # print("Stacking")
+    # print(cross_validate(est_stack, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
 
     # df7 = load_prev_data_separate("./Test_sets/week_7_test_data.csv", "./Labels/week_7_labels.csv")
     # features, p_full_data, encoder = preprocessing(df7, encoder)
@@ -467,5 +467,5 @@ if __name__ == '__main__':
     # est.set_probs(0.6, 0.4, 0.7)
     #
     # Store model predictions over test set
-    # real = load_test("./Test_sets/week_7_test_data.csv", encoder)
+    # real = load_test("./Test_sets/week_8_test_data.csv", encoder)
     # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
