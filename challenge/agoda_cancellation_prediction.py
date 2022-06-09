@@ -1,3 +1,5 @@
+import itertools
+
 import sklearn.ensemble
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
@@ -10,9 +12,11 @@ import datetime as dt
 import re
 from sklearn.metrics import confusion_matrix, classification_report, f1_score
 import random
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 from sklearn.ensemble import VotingClassifier, StackingClassifier, RandomForestClassifier, BaggingClassifier, \
     ExtraTreesClassifier
+
+
 # from sklearn.model_selection import cross_validate
 
 
@@ -357,7 +361,7 @@ def transform_policy(data):
                     closest_after = int(match[0])
 
     data["in_period_fine"] = np.max([data["in_period_fine"],
-                                    data["before_period_fine"]])
+                                     data["before_period_fine"]])
 
     data["after_period_fine"] = np.max([data["in_period_fine"],
                                         data["after_period_fine"],
@@ -399,24 +403,32 @@ def testings(df, responses, encoder):
     est3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
     est = VotingClassifier(
         estimators=[('rf', est1), ('bag', est2), ('et', est3)],
-        voting="soft",
-        weights=[0.6, 0.4, 0.7]
+        voting="soft"
     )  #
+    # gscv = GridSearchCV(est,
+    #                     param_grid={"weights": list(
+    #                         itertools.product(np.linspace(start=0, stop=1, num=5, endpoint=False), repeat=3)
+    #                     )
+    #                     },
+    #                     scoring="f1_macro",
+    #                     cv=KFold(shuffle=True))
+    # gscv.fit(df_all, responses_all.astype(bool))
+    # print(gscv.cv_results_["best_params_"])
+    # print(gscv.cv_results_["best_score_"])
+    # est_stack = StackingClassifier(estimators=[('rf', est1), ('bag', est2), ('et', est3)],
+    #                                cv=KFold(shuffle=True))
 
-    est_stack = StackingClassifier(estimators=[('rf', est1), ('bag', est2), ('et', est3)],
-                                   cv=KFold(shuffle=True))
-
-    all_est_b = AgodaCancellationEstimator(balanced=True)
-    all_est_b.set_probs(0.6, 0.4, 0.7)
+    # all_est_b = AgodaCancellationEstimator(balanced=True)
+    # all_est_b.set_probs(0.6, 0.4, 0.7)
     # est.fit(df_all, responses_all.astype(bool))
     # all_est_b.fit(df_all, responses_all.astype(bool))
 
-    # def f1_macro(y_true, y_pred):
-    #     return f1_score(y_true, y_pred, average="macro")
+    def f1_macro(y_true, y_pred):
+        return f1_score(y_true, y_pred, average="macro")
     # print("All Balanced")
     # print(cross_validate(all_est_b, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
-    # print("Voting")
-    # print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
+    print("Voting")
+    print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
     # print("Stacking")
     # print(cross_validate(est_stack, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
 
@@ -450,7 +462,6 @@ def testings(df, responses, encoder):
     #     print(train_score)
 
 
-
 if __name__ == '__main__':
     np.random.seed(0)
     # Load data
@@ -460,12 +471,12 @@ if __name__ == '__main__':
     # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    testings(df, responses, encoder)
+    # testings(df, responses, encoder)  # TODO: Uncomment this to test
 
-    # est = AgodaCancellationEstimator(balanced=True)
-    # est.fit(df_all, responses_all.astype(bool))
-    # est.set_probs(0.6, 0.4, 0.7)
-    #
+    est = AgodaCancellationEstimator()
+    # est = AgodaCancellationEstimator(balanced=True)  #  TODO: decide if we want this or the new one?
+    est.fit(df_all, responses_all.astype(bool))
+
     # Store model predictions over test set
-    # real = load_test("./Test_sets/week_8_test_data.csv", encoder)
-    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
+    real = load_test("./Test_sets/week_8_test_data.csv", encoder)
+    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")

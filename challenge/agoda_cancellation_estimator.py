@@ -101,12 +101,9 @@ class AgodaCancellationEstimator(BaseEstimator):
         return np.array(result)
 
     def set_probs(self, p1, p2, p3):
-        if not self.balanced:
-            self.estimator.set_params(weights=[p1, p2, p3])
-        else:
-            self.PROB_LIMIT = p1
-            self.PROB_LIMIT1 = p2
-            self.PROB_LIMIT2 = p3
+        self.PROB_LIMIT = p1
+        self.PROB_LIMIT1 = p2
+        self.PROB_LIMIT2 = p3
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
