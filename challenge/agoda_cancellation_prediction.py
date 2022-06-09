@@ -2,15 +2,18 @@ import sklearn.ensemble
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
 
+from IMLearn.model_selection.cross_validate import cross_validate
 from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 import numpy as np
 import pandas as pd
 import datetime as dt
 import re
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, f1_score
 import random
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import VotingClassifier, StackingClassifier
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.ensemble import VotingClassifier, StackingClassifier, RandomForestClassifier, BaggingClassifier, \
+    ExtraTreesClassifier
+# from sklearn.model_selection import cross_validate
 
 
 def sample_together(n, X, y):
@@ -138,7 +141,8 @@ def load_all_weeks(encoder=None):
     df4 = load_prev_data_separate("./Test_sets/week_4_test_data.csv", "./Labels/week_4_labels.csv")
     df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
     df6 = load_prev_data_separate("./Test_sets/week_6_test_data.csv", "./Labels/week_6_labels.csv")
-    df_combined = pd.concat([df1, df2, df3, df4, df5, df6], ignore_index=True)
+    df7 = load_prev_data_separate("./Test_sets/week_7_test_data.csv", "./Labels/week_7_labels.csv")
+    df_combined = pd.concat([df1, df2, df3, df4, df5, df6, df7], ignore_index=True)
     features, p_full_data, encoder = preprocessing(df_combined, encoder)
     labels = p_full_data["cancellation_bool"]
     features = features.drop(["cancellation_bool"], axis=1)
@@ -150,7 +154,9 @@ def load_weeks_3(encoder=None):
     df2 = load_prev_data_separate("./Test_sets/week_2_test_data.csv", "./Labels/week_2_labels.csv")
     df3 = load_prev_data_separate("./Test_sets/week_3_test_data.csv", "./Labels/week_3_labels.csv")
     df4 = load_prev_data_separate("./Test_sets/week_4_test_data.csv", "./Labels/week_4_labels.csv")
-    df_combined = pd.concat([df1, df2, df3, df4], ignore_index=True)
+    df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
+    df6 = load_prev_data_separate("./Test_sets/week_6_test_data.csv", "./Labels/week_6_labels.csv")
+    df_combined = pd.concat([df1, df2, df3, df4, df5, df6], ignore_index=True)
     features, p_full_data, encoder = preprocessing(df_combined, encoder)
     labels = p_full_data["cancellation_bool"]
     features = features.drop(["cancellation_bool"], axis=1)
@@ -379,151 +385,70 @@ def evaluate_and_export(estimator  #: BaseEstimator,
 
 
 def testings(df, responses, encoder):
-    df_prev, responses_prev, encoder = load_weeks_3(encoder)
-    # df_prev, responses_prev, encoder = load_all_weeks(encoder)
-    X_train, X_test, y_train, y_test = train_test_split(df, responses, test_size=0.25)
-    X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
+    # df_prev, responses_prev, encoder = load_weeks_3(encoder)
+    df_prev, responses_prev, encoder = load_all_weeks(encoder)
+    # X_train, X_test, y_train, y_test = train_test_split(df, responses, test_size=0.25)
+    # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
     # df_all = df_all.fillna(0)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    X_train_all, X_test_all, y_train_all, y_test_all = train_test_split(df_all, responses_all, test_size=0.25)
-    # forest = DecisionTreeClassifier(class_weight="balanced")
-    # a = forest.cost_complexity_pruning_path(X_train, y_train.astype(bool))
-    # dict_a = np.array([a.ccp_alphas, a.impurities])
-    # print(dict_a)
+    # X_train_all, X_test_all, y_train_all, y_test_all = train_test_split(df_all, responses_all, test_size=0.25)
 
-    # og_est_b = AgodaCancellationEstimator(balanced=True)
-    # og_est_b.fit(X_train, y_train.astype(bool))
-    # # a = np.array([og_est_b.estimator.feature_importances_, og_est_b.estimator.feature_names_in_])
-    # og_est_b.set_probs(0.6, 0.5, 0.7)
+    est1 = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
+    est2 = BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)
+    est3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
+    est = VotingClassifier(
+        estimators=[('rf', est1), ('bag', est2), ('et', est3)],
+        voting="soft",
+        weights=[0.6, 0.4, 0.7]
+    )  #
 
-    # og_est = AgodaCancellationEstimator()
-    # og_est.fit(X_train, y_train.astype(bool))
-    #
-    # wk_est_b = AgodaCancellationEstimator(balanced=True)
-    # wk_est_b.fit(X_train_wk, y_train_wk.astype(bool))
-    #
-    # wk_est = AgodaCancellationEstimator()
-    # wk_est.fit(X_train_wk, y_train_wk.astype(bool))
+    est_stack = StackingClassifier(estimators=[('rf', est1), ('bag', est2), ('et', est3)],
+                                   cv=KFold(shuffle=True))
 
     all_est_b = AgodaCancellationEstimator(balanced=True)
-    all_est_b.fit(X_train_all, y_train_all.astype(bool))
     all_est_b.set_probs(0.6, 0.4, 0.7)
-    # all_est = AgodaCancellationEstimator()
-    # all_est.fit(X_train_all, y_train_all.astype(bool))
-    # df4 = load_prev_data_separate("./Test_sets/test_set_week_4.csv", "./Labels/test_set_week_4_labels.csv")
-    # features, p_full_data = preprocessing(df4)
-    # features = features.drop(["cancellation_bool"], axis=1)
+    # est.fit(df_all, responses_all.astype(bool))
+    # all_est_b.fit(df_all, responses_all.astype(bool))
+
+    def f1_macro(y_true, y_pred):
+        return f1_score(y_true, y_pred, average="macro")
+    print("All Balanced")
+    print(cross_validate(all_est_b, df_all, responses_all.astype(bool), f1_macro, cv=2))
+    print("Voting")
+    print(cross_validate(est, df_all, responses_all.astype(bool), f1_macro, cv=2))
+    print("Stacking")
+    print(cross_validate(est_stack, df_all, responses_all.astype(bool), f1_macro, cv=2))
+
+    # df7 = load_prev_data_separate("./Test_sets/week_7_test_data.csv", "./Labels/week_7_labels.csv")
+    # features, p_full_data, encoder = preprocessing(df7, encoder)
     # labels = p_full_data["cancellation_bool"]
-    # df3, resp3 = load_weeks_3()
-    # est_wk_3 = AgodaCancellationEstimator()
-    # est_wk_3.fit(df3, resp3.astype(bool))
-    # est_prev = AgodaCancellationEstimator(balanced=True)
-    # est_prev.fit(df, responses.astype(bool))
-    # X_split = pd.concat([X_test, X_test_wk], ignore_index=True)
-    # y_split = pd.concat([y_test, y_test_wk], ignore_index=True)
-    # pred = (est_prev.predict(features) + est_wk_3.predict(features)) >= 1
+    # features = features.drop(["cancellation_bool"], axis=1)
 
-    # print("############ Split Data ################")
-    # print("%% On Split test %%")
-    # print(confusion_matrix(labels.astype(bool), pred))
-    # print(classification_report(labels.astype(bool), pred))
-
-    # print("############ Original Data Balanced ################"
-    #     # print("%% On Original test %%")
-    #     # print(confusion_matrix(y_test.astype(bool), og_est_b.predict(X_test)))
-    #     # print(classification_report(y_test.astype(bool), og_est_b.predict(X_test), digits=5))
-    #     # print("%% On New Data %%")
-    #     # print(confusion_matrix(responses_prev.astype(bool), og_est_b.predict(df_prev)))
-    #     # print(classification_report(responses_prev.astype(bool), og_est_b.predict(df_prev), digits=5)))
-
-    # print("############ Original Data UnBalanced ################")
-    # print("%% On Original test %%")
-    # print(confusion_matrix(y_test.astype(bool), og_est.predict(X_test)))
-    # print(classification_report(y_test.astype(bool), og_est.predict(X_test)))
-    # print("%% On New Data %%")
-    # print(confusion_matrix(responses_prev.astype(bool), og_est.predict(df_prev)))
-    # print(classification_report(responses_prev.astype(bool), og_est.predict(df_prev)))
-
-    # print("############ New Data Balanced ################")
-    # print("%% On Original Data")
-    # print(confusion_matrix(responses.astype(bool), wk_est_b.predict(df)))
-    # print(classification_report(responses.astype(bool), wk_est_b.predict(df)))
-    # print("%% On New Data Test %%")
-    # print(confusion_matrix(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
-    # print(classification_report(y_test_wk.astype(bool), wk_est_b.predict(X_test_wk)))
-
-    # print("############ New Data UnBalanced ################")
-    # print("%% On New Data Test %%")
-    # print(confusion_matrix(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
-    # print(classification_report(y_test_wk.astype(bool), wk_est.predict(X_test_wk)))
-
-    print("############ All Data Balanced ################")
-    print("%% On All Data Test %%")
-    print(confusion_matrix(y_test_all.astype(bool), all_est_b.predict(X_test_all)))
-    print(classification_report(y_test_all.astype(bool), all_est_b.predict(X_test_all), digits=5))
-
-    # print("############ All Data UnBalanced ################")
-    # print("%% On All Data Test %%")
-    # print(confusion_matrix(y_test_all.astype(bool), all_est.predict(X_test_all)))
-    # print(classification_report(y_test_all.astype(bool), all_est.predict(X_test_all)))
+    # print("############ All Data Balanced ################")
+    # print("%% On week 7 %%")
+    # print(confusion_matrix(labels.astype(bool), all_est_b.predict(features)))
+    # print(classification_report(labels.astype(bool), all_est_b.predict(features), digits=5))
     #
-    # est = AgodaCancellationEstimator(balanced=True)
-    # est.fit(df, responses.astype(bool))
-    # df1 = load_prev_data_separate("./Test_sets/test_set_week_1.csv", "./Labels/test_set_week_1_labels.csv")
-    # df2 = load_prev_data_separate("./Test_sets/test_set_week_2.csv", "./Labels/test_set_labels_week_2.csv")
-    # df3 = load_prev_data_separate("./Test_sets/test_set_week_3.csv", "./Labels/test_set_week_3_labels.csv")
-    # df4 = load_prev_data_separate("./Test_sets/test_set_week_4.csv", "./Labels/test_set_week_4_labels.csv")
-    # features, p_full_data = preprocessing(df1)
-    # labels = p_full_data["cancellation_bool"]
-    # features = features.drop(["cancellation_bool"], axis=1)
-
-    # print("############ Original One Week At A TIme ################")
+    # print("############ Voting Classifier ################")
+    # print("%% On week 7 %%")
     # print(confusion_matrix(labels.astype(bool), est.predict(features)))
-    # print(classification_report(labels.astype(bool), est.predict(features)))
-    # features, p_full_data = preprocessing(df2)
-    # labels = p_full_data["cancellation_bool"]
-    # features = features.drop(["cancellation_bool"], axis=1)
-    # print(confusion_matrix(labels.astype(bool), est.predict(features)))
-    # print(classification_report(labels.astype(bool), est.predict(features)))
-    # features, p_full_data = preprocessing(df3)
-    # labels = p_full_data["cancellation_bool"]
-    # features = features.drop(["cancellation_bool"], axis=1)
-    # print(confusion_matrix(labels.astype(bool), est.predict(features)))
-    # print(classification_report(labels.astype(bool), est.predict(features)))
+    # print(classification_report(labels.astype(bool), est.predict(features), digits=5))
 
-    df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
-    # # est = AgodaCancellationEstimator(balanced=True)
-    # # est.fit(df_all, responses_all.astype(bool))
-    features, p_full_data, encoder = preprocessing(df5, encoder)
-    labels = p_full_data["cancellation_bool"]
-    features = features.drop(["cancellation_bool"], axis=1)
-    print("%% On Week 5 %%")
-    print(confusion_matrix(labels.astype(bool), all_est_b.predict(features)))
-    print(classification_report(labels.astype(bool), all_est_b.predict(features)))
-    df6 = load_prev_data_separate("./Test_sets/week_6_test_data.csv", "./Labels/week_6_labels.csv")
-    features, p_full_data, encoder = preprocessing(df6, encoder)
-    labels = p_full_data["cancellation_bool"]
-    features = features.drop(["cancellation_bool"], axis=1)
-    print("%% On Week 6 %%")
-    print(confusion_matrix(labels.astype(bool), all_est_b.predict(features)))
-    print(classification_report(labels.astype(bool), all_est_b.predict(features)))
+    # for i in range(5):
+    #     np.random.seed(i)
+    #     scores = cross_validate(est, df_all, responses_all.astype(bool),
+    #                    scoring="f1_macro", cv=KFold(shuffle=True), return_train_score=True)
+    #     print(f"######## All Data Balanced , seed={i} ###########")
+    #     test_score = scores["test_score"]
+    #     print(f"avg test: {np.mean(test_score)}")
+    #     print("scores:")
+    #     print(test_score)
+    #     train_score = scores["train_score"]
+    #     print(f"avg test: {np.mean(train_score)}")
+    #     print("scores:")
+    #     print(train_score)
 
-    #
-    # df3, resp3 = load_weeks_3()
-    # df3 = pd.concat([df, df3], ignore_index=True)
-    # df3 = df3.fillna(0)
-    # resp3 = pd.concat([responses, resp3], ignore_index=True)
-    # df5 = load_prev_data_separate("./Test_sets/week_5_test_data.csv", "./Labels/week_5_labels.csv")
-    # features, p_full_data, encoder = preprocessing(df5, encoder)
-    # labels = p_full_data["cancellation_bool"]
-    # features = features.drop(["cancellation_bool"], axis=1)
-    #
-    # est_wk_3 = AgodaCancellationEstimator(balanced=True)
-    # est_wk_3.fit(df_all, responses_all.astype(bool))
-    # print(confusion_matrix(labels.astype(bool), est_wk_3.predict(features)))
-    # print(classification_report(labels.astype(bool), est_wk_3.predict(features)))
-    # a = np.array([est_wk_3.estimator.feature_importances_, est_wk_3.estimator.feature_names_in_])
 
 
 if __name__ == '__main__':
@@ -535,19 +460,12 @@ if __name__ == '__main__':
     # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    # testings(df, responses, encoder)
+    testings(df, responses, encoder)
 
-    est = AgodaCancellationEstimator(balanced=True)
-    est.fit(df_all, responses_all.astype(bool))
-    est.set_probs(0.6, 0.4, 0.7)
-
-    df7 = load_prev_data_separate("./Test_sets/week_7_test_data.csv", "./Labels/week_7_labels.csv")
-    features, p_full_data, encoder = preprocessing(df7, encoder)
-    labels = p_full_data["cancellation_bool"]
-    features = features.drop(["cancellation_bool"], axis=1)
-    print("%% On Week 7 %%")
-    print(confusion_matrix(labels.astype(bool), est.predict(features)))
-    print(classification_report(labels.astype(bool), est.predict(features), digits=8))
+    # est = AgodaCancellationEstimator(balanced=True)
+    # est.fit(df_all, responses_all.astype(bool))
+    # est.set_probs(0.6, 0.4, 0.7)
+    #
     # Store model predictions over test set
     # real = load_test("./Test_sets/week_7_test_data.csv", encoder)
     # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
