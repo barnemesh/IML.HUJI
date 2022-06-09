@@ -475,6 +475,7 @@ if __name__ == '__main__':
 
     est = AgodaCancellationEstimator()
     # est = AgodaCancellationEstimator(balanced=True)  #  TODO: decide if we want this or the new one?
+    #est.set_probs(0.6, 0.4, 0.7)
     est.fit(df_all, responses_all.astype(bool))
 
     # Store model predictions over test set
