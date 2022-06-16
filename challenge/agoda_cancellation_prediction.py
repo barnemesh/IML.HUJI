@@ -439,51 +439,16 @@ def testings(df, responses, encoder):
     df_all = pd.concat([df, df_prev], ignore_index=True)
     # df_all = df_all.fillna(0)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    # X_train_all, X_test_all, y_train_all, y_test_all = train_test_split(df_all, responses_all, test_size=0.25)
 
-    est1 = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
-    est2 = BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)
-    est3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
-    est = VotingClassifier(
-        estimators=[('rf', est1), ('bag', est2), ('et', est3)],
-        voting="soft"
-    )  #
-    # gscv = GridSearchCV(est,
-    #                     param_grid={"weights": list(
-    #                         itertools.product(np.linspace(start=0, stop=1, num=5, endpoint=False), repeat=3)
-    #                     )
-    #                     },
-    #                     scoring="f1_macro",
-    #                     cv=KFold(shuffle=True))
-    # gscv.fit(df_all, responses_all.astype(bool))
-    # print(gscv.cv_results_["best_params_"])
-    # print(gscv.cv_results_["best_score_"])
-    # est_stack = StackingClassifier(estimators=[('rf', est1), ('bag', est2), ('et', est3)],
-    #                                cv=KFold(shuffle=True))
-
-    # all_est_b = AgodaCancellationEstimator(balanced=True)
-    # all_est_b.set_probs(0.6, 0.4, 0.7)
-    # est.fit(df_all, responses_all.astype(bool))
-    # all_est_b.fit(df_all, responses_all.astype(bool))
+    est = AgodaCancellationEstimator()
 
     def f1_macro(y_true, y_pred):
         return f1_score(y_true, y_pred, average="macro")
-    # print("All Balanced")
-    # print(cross_validate(all_est_b, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
-    print("Voting")
-    print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
-    # print("Stacking")
-    # print(cross_validate(est_stack, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=3))
 
-    # df7 = load_prev_data_separate("./Test_sets/week_7_test_data.csv", "./Labels/week_7_labels.csv")
-    # features, p_full_data, encoder = preprocessing(df7, encoder)
-    # labels = p_full_data["cancellation_bool"]
-    # features = features.drop(["cancellation_bool"], axis=1)
-
-    # print("############ All Data Balanced ################")
-    # print("%% On week 7 %%")
-    # print(confusion_matrix(labels.astype(bool), all_est_b.predict(features)))
-    # print(classification_report(labels.astype(bool), all_est_b.predict(features), digits=5))
+    print("== Voting - New only ==")
+    print(cross_validate(est, df_prev.to_numpy(), responses_prev.to_numpy().astype(bool), f1_macro, cv=5))
+    print("== Voting - All ==")
+    print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=5))
 
 
 
