@@ -4,7 +4,7 @@ import sklearn.ensemble
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
 
-from IMLearn.model_selection.cross_validate import cross_validate
+# from IMLearn.model_selection.cross_validate import cross_validate
 from challenge.agoda_cancellation_estimator import AgodaCancellationEstimator
 import numpy as np
 import pandas as pd
@@ -12,12 +12,11 @@ import datetime as dt
 import re
 from sklearn.metrics import confusion_matrix, classification_report, f1_score
 import random
-from sklearn.model_selection import train_test_split, KFold, GridSearchCV
+from sklearn.model_selection import train_test_split, KFold, GridSearchCV, StratifiedKFold
 from sklearn.ensemble import VotingClassifier, StackingClassifier, RandomForestClassifier, BaggingClassifier, \
     ExtraTreesClassifier
 
-
-# from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate
 
 
 def sample_together(n, X, y):
@@ -443,19 +442,35 @@ def testings(df, responses, encoder):
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
 
     est = AgodaCancellationEstimator()
-    est_hard = AgodaCancellationEstimator(voting="hard")
 
     def f1_macro(y_true, y_pred):
         return f1_score(y_true, y_pred, average="macro")
 
+    # params = {'weights': [tuple(a) for a in itertools.product(range(1, 4), repeat=3)]}
+
+    # grid = GridSearchCV(est.estimator, param_grid=params,
+    #                     cv=StratifiedKFold(shuffle=True), scoring="f1_macro",
+    #                     verbose=2, n_jobs=-1)
+
     print("== Voting soft - New only ==")
-    print(cross_validate(est, df_prev.to_numpy(), responses_prev.to_numpy().astype(bool), f1_macro, cv=5))
-    print("== Voting hard - New only ==")
-    print(cross_validate(est_hard, df_prev.to_numpy(), responses_prev.to_numpy().astype(bool), f1_macro, cv=5))
+    cv = cross_validate(est.estimator, df_prev, responses_prev.astype(bool),
+                        scoring="f1_macro", cv=StratifiedKFold(shuffle=True),
+                        n_jobs=-1, verbose=2, return_train_score=True)
+    print(np.mean(cv["test_score"]))
+    print(np.mean(cv["train_score"]))
+    # grid.fit(df_prev, responses_prev.astype(bool))
+    # print(grid.best_score_)
+    # print(grid.best_params_)
+
     print("== Voting soft - All ==")
-    print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=5))
-    print("== Voting hard - All ==")
-    print(cross_validate(est_hard, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=5))
+    cv = cross_validate(est.estimator, df, responses.astype(bool),
+                        scoring="f1_macro", cv=StratifiedKFold(shuffle=True),
+                        n_jobs=-1, verbose=2, return_train_score=True)
+    print(np.mean(cv["test_score"]))
+    print(np.mean(cv["train_score"]))
+    # grid.fit(df_all, responses_all.astype(bool))
+    # print(grid.best_score_)
+    # print(grid.best_params_)
 
 
 if __name__ == '__main__':
@@ -467,11 +482,11 @@ if __name__ == '__main__':
     # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    testings(df, responses, encoder)  # TODO: Uncomment this to test
+    # testings(df, responses, encoder)  # TODO: Uncomment this to test
 
-    # est = AgodaCancellationEstimator()
-    # est.fit(df_all, responses_all.astype(bool))
+    est = AgodaCancellationEstimator()
+    est.fit(df_all, responses_all.astype(bool))
     #
     # # Store model predictions over test set
-    # real = load_test("./Test_sets/week_9_test_data.csv", encoder)
-    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
+    real = load_test("./Test_sets/week_9_test_data.csv", encoder)
+    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")

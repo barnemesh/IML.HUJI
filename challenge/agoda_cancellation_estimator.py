@@ -42,7 +42,7 @@ class AgodaCancellationEstimator(BaseEstimator):
                           ('bag', BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)),
                           ('et', ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001))
                           ]
-            self.estimator = VotingClassifier(estimators=estimators, voting=voting)
+            self.estimator = VotingClassifier(estimators=estimators, voting=voting, n_jobs=-1)
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
