@@ -406,12 +406,14 @@ def transform_policy(data):
 
     return data
 
+
 def check_if_local(data, dct):
     if data["guest_nationality_country_name"] == "UNKNOWN":
         return 0
     guest_nat = data["guest_nationality_country_name"].replace("\xa0", " ")
     if data["hotel_country_code"] == dct[guest_nat]:
         return 1
+
 
 def evaluate_and_export(estimator  #: BaseEstimator,
                         , X: np.ndarray, filename: str):
@@ -441,15 +443,19 @@ def testings(df, responses, encoder):
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
 
     est = AgodaCancellationEstimator()
+    est_hard = AgodaCancellationEstimator(voting="hard")
 
     def f1_macro(y_true, y_pred):
         return f1_score(y_true, y_pred, average="macro")
 
-    print("== Voting - New only ==")
+    print("== Voting soft - New only ==")
     print(cross_validate(est, df_prev.to_numpy(), responses_prev.to_numpy().astype(bool), f1_macro, cv=5))
-    print("== Voting - All ==")
+    print("== Voting hard - New only ==")
+    print(cross_validate(est_hard, df_prev.to_numpy(), responses_prev.to_numpy().astype(bool), f1_macro, cv=5))
+    print("== Voting soft - All ==")
     print(cross_validate(est, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=5))
-
+    print("== Voting hard - All ==")
+    print(cross_validate(est_hard, df_all.to_numpy(), responses_all.to_numpy().astype(bool), f1_macro, cv=5))
 
 
 if __name__ == '__main__':

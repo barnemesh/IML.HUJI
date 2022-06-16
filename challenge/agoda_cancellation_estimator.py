@@ -17,7 +17,7 @@ class AgodaCancellationEstimator(BaseEstimator):
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self, balanced: bool = False):
+    def __init__(self, balanced: bool = False, voting="soft"):
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
         Parameters
@@ -42,7 +42,7 @@ class AgodaCancellationEstimator(BaseEstimator):
                           ('bag', BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)),
                           ('et', ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001))
                           ]
-            self.estimator = VotingClassifier(estimators=estimators, voting="soft")
+            self.estimator = VotingClassifier(estimators=estimators, voting=voting)
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
@@ -74,7 +74,7 @@ class AgodaCancellationEstimator(BaseEstimator):
             Predicted responses of given samples
         """
         if not self.balanced:
-            return np.array(self.estimator.predict_proba(X)[:, 1] >= self.PROB_LIMIT)
+            return self.estimator.predict(X)
         pred1 = self.estimator.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT
         pred2 = self.estimator2.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT1
         pred3 = self.estimator3.predict_proba(X)  # [:, 1] >= self.PROB_LIMIT2
