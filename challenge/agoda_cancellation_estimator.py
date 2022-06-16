@@ -17,7 +17,7 @@ class AgodaCancellationEstimator(BaseEstimator):
     An estimator for solving the Agoda Cancellation challenge
     """
 
-    def __init__(self, balanced: bool = False, voting="soft"):
+    def __init__(self, balanced: bool = False, voting="soft", ccp_alpha=0.0001):
         """
         Instantiate an estimator for solving the Agoda Cancellation challenge
         Parameters
@@ -33,16 +33,18 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         if balanced:
             # TODO: try grid search
-            self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            self.estimator = RandomForestClassifier(class_weight="balanced", ccp_alpha=ccp_alpha)
             # self.estimator2 = AdaBoostClassifier(n_estimators=75, algorithm="SAMME")
-            self.estimator2 = BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)
-            self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001)
+            self.estimator2 = BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75,
+                                                bootstrap_features=True)
+            self.estimator3 = ExtraTreesClassifier(class_weight="balanced", ccp_alpha=ccp_alpha)
         else:
-            estimators = [('rf', RandomForestClassifier(class_weight="balanced", ccp_alpha=0.0001)),
-                          ('bag', BaggingClassifier(n_estimators=20, max_samples=0.75, max_features=0.75, bootstrap_features=True)),
-                          ('et', ExtraTreesClassifier(class_weight="balanced", ccp_alpha=0.0001))
+            estimators = [('rf', RandomForestClassifier(class_weight="balanced", ccp_alpha=ccp_alpha, max_samples=0.75)),
+                          ('bag', BaggingClassifier(n_estimators=60, max_samples=0.75, max_features=0.75,
+                                                    bootstrap_features=True)),
+                          ('et', RandomForestClassifier(class_weight="balanced_subsample", ccp_alpha=ccp_alpha, max_samples=0.75))
                           ]
-            self.estimator = VotingClassifier(estimators=estimators, voting=voting, n_jobs=-1)
+            self.estimator = VotingClassifier(estimators=estimators, voting=voting, weights=[3, 1, 3])
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """

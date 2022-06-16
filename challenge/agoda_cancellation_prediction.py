@@ -441,7 +441,7 @@ def testings(df, responses, encoder):
     # df_all = df_all.fillna(0)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
 
-    est = AgodaCancellationEstimator()
+    est = AgodaCancellationEstimator(ccp_alpha=0.003)
 
     def f1_macro(y_true, y_pred):
         return f1_score(y_true, y_pred, average="macro")
@@ -455,22 +455,35 @@ def testings(df, responses, encoder):
     print("== Voting soft - New only ==")
     cv = cross_validate(est.estimator, df_prev, responses_prev.astype(bool),
                         scoring="f1_macro", cv=StratifiedKFold(shuffle=True),
-                        n_jobs=-1, verbose=2, return_train_score=True)
+                        n_jobs=-1, verbose=3, return_train_score=True)
     print(np.mean(cv["test_score"]))
     print(np.mean(cv["train_score"]))
     # grid.fit(df_prev, responses_prev.astype(bool))
     # print(grid.best_score_)
     # print(grid.best_params_)
 
-    print("== Voting soft - All ==")
-    cv = cross_validate(est.estimator, df, responses.astype(bool),
-                        scoring="f1_macro", cv=StratifiedKFold(shuffle=True),
-                        n_jobs=-1, verbose=2, return_train_score=True)
-    print(np.mean(cv["test_score"]))
-    print(np.mean(cv["train_score"]))
-    # grid.fit(df_all, responses_all.astype(bool))
-    # print(grid.best_score_)
-    # print(grid.best_params_)
+    # print("== Voting soft - Old ==")
+    # cv = cross_validate(est.estimator, df, responses.astype(bool),
+    #                     scoring="f1_macro", cv=StratifiedKFold(shuffle=True),
+    #                     n_jobs=-1, verbose=3, return_train_score=True)
+    # print(np.mean(cv["test_score"]))
+    # print(np.mean(cv["train_score"]))
+    #
+    #
+    # print("== Voting soft - All ==")
+    # cv = cross_validate(est.estimator, df_all, responses_all.astype(bool),
+    #                     scoring="f1_macro", cv=StratifiedKFold(shuffle=True),
+    #                     n_jobs=-1, verbose=3, return_train_score=True)
+    # print(np.mean(cv["test_score"]))
+    # print(np.mean(cv["train_score"]))
+    #
+    # print("== Voting soft - All unshuffled ==")
+    # cv = cross_validate(est.estimator, df_all, responses_all.astype(bool),
+    #                     scoring="f1_macro", cv=13,
+    #                     n_jobs=-1, verbose=3, return_train_score=True)
+    # print(np.mean(cv["test_score"]))
+    # print(np.mean(cv["train_score"]))
+
 
 
 if __name__ == '__main__':
@@ -482,11 +495,11 @@ if __name__ == '__main__':
     # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    # testings(df, responses, encoder)  # TODO: Uncomment this to test
+    testings(df, responses, encoder)  # TODO: Uncomment this to test
 
     est = AgodaCancellationEstimator()
     est.fit(df_all, responses_all.astype(bool))
-    #
+
     # # Store model predictions over test set
     real = load_test("./Test_sets/week_9_test_data.csv", encoder)
     evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
