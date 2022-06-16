@@ -224,15 +224,13 @@ def preprocessing(full_data, encoder=None):
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
         'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4, "Tanzania": 6, "Panama": 3}).fillna(8)
 
-    # country_codes = pd.read_csv("countriesCodes.csv")
-    #
-    # indexes = []
-    # for country_code in full_data["guest_nationality_country_name"]:
-    #     indexes.append(country_codes[country_codes["Name"] == country_code].index.values)
-    #
-    # print(indexes)
-    # full_data["is_guest_local"] = (np.take(country_codes["Code"], indexes) == full_data["hotel_country_code"])
-    # print(full_data["is_guest_local"].value_counts())
+    country_codes = pd.read_csv("countriesCodes.csv")
+
+    country_codes_dict = dict()
+    for row in country_codes.to_numpy():
+        country_codes_dict[row[0]] = row[1]
+
+    full_data["is_guest_local"] = full_data.apply(check_if_local, axis=1, args=(country_codes_dict,)).fillna(0)
 
     categoricals = [
         "guest_nationality_country_name_processed",
@@ -408,6 +406,12 @@ def transform_policy(data):
 
     return data
 
+def check_if_local(data, dct):
+    if data["guest_nationality_country_name"] == "UNKNOWN":
+        return 0
+    guest_nat = data["guest_nationality_country_name"].replace("\xa0", " ")
+    if data["hotel_country_code"] == dct[guest_nat]:
+        return 1
 
 def evaluate_and_export(estimator  #: BaseEstimator,
                         , X: np.ndarray, filename: str):
@@ -480,25 +484,7 @@ def testings(df, responses, encoder):
     # print("%% On week 7 %%")
     # print(confusion_matrix(labels.astype(bool), all_est_b.predict(features)))
     # print(classification_report(labels.astype(bool), all_est_b.predict(features), digits=5))
-    #
-    # print("############ Voting Classifier ################")
-    # print("%% On week 7 %%")
-    # print(confusion_matrix(labels.astype(bool), est.predict(features)))
-    # print(classification_report(labels.astype(bool), est.predict(features), digits=5))
 
-    # for i in range(5):
-    #     np.random.seed(i)
-    #     scores = cross_validate(est, df_all, responses_all.astype(bool),
-    #                    scoring="f1_macro", cv=KFold(shuffle=True), return_train_score=True)
-    #     print(f"######## All Data Balanced , seed={i} ###########")
-    #     test_score = scores["test_score"]
-    #     print(f"avg test: {np.mean(test_score)}")
-    #     print("scores:")
-    #     print(test_score)
-    #     train_score = scores["train_score"]
-    #     print(f"avg test: {np.mean(train_score)}")
-    #     print("scores:")
-    #     print(train_score)
 
 
 if __name__ == '__main__':
@@ -510,13 +496,11 @@ if __name__ == '__main__':
     # X_train_wk, X_test_wk, y_train_wk, y_test_wk = train_test_split(df_prev, responses_prev, test_size=0.25)
     df_all = pd.concat([df, df_prev], ignore_index=True)
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
-    # testings(df, responses, encoder)  # TODO: Uncomment this to test
+    testings(df, responses, encoder)  # TODO: Uncomment this to test
 
     # est = AgodaCancellationEstimator()
-    est = AgodaCancellationEstimator(balanced=True)  #  TODO: decide if we want this or the new one?
-    #est.set_probs(0.6, 0.4, 0.7)
-    est.fit(df_all, responses_all.astype(bool))
-
-    # Store model predictions over test set
-    real = load_test("./Test_sets/week_8_test_data.csv", encoder)
-    evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
+    # est.fit(df_all, responses_all.astype(bool))
+    #
+    # # Store model predictions over test set
+    # real = load_test("./Test_sets/week_9_test_data.csv", encoder)
+    # evaluate_and_export(est, real, "312245087_312162464_316514314.csv")
