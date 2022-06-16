@@ -168,6 +168,34 @@ def load_weeks_3(encoder=None):
 
 
 def preprocessing(full_data, encoder=None):
+    full_data["guest_nationality_income"] = full_data["guest_nationality_country_name"].map({
+        'China': 3, 'South Africa': 3, 'South Korea': 4, 'Singapore': 4, 'Thailand': 3, 'Argentina': 3,
+        'Taiwan': 4, 'Saudi Arabia': 4, 'Mexico': 3, 'Malaysia': 3, 'Germany': 4, 'New Zealand': 4,
+        'Hong Kong': 4, 'Vietnam': 2, 'Indonesia': 2, 'Australia': 4, 'Norway': 4, 'United Kingdom': 4,
+        'Peru': 3, 'Japan': 4, 'Philippines': 2, 'United States': 4, 'India': 2, 'Sri Lanka': 2,
+        'Czech Republic': 4, 'Finland': 4, 'United Arab Emirates': 4, 'Brazil': 3, 'Bangladesh': 2,
+        'France': 4, 'Cambodia': 2, 'Russia': 3, 'Belgium': 4, 'Bahrain': 4, 'Macau': 4, 'Switzerland': 4,
+        'Hungary': 4, 'Italy': 4, 'Austria': 4, 'Oman': 4, 'Spain': 4, 'Ukraine': 2, 'Slovakia': 4, 'Canada': 4,
+        'Kuwait': 4, 'Denmark': 4, 'Pakistan': 2, 'Ireland': 4, 'Brunei Darussalam': 4, 'Poland': 4,
+        'Sweden': 4, 'Morocco': 2, 'Israel': 4, 'Egypt': 2, 'Netherlands': 4, 'Myanmar': 2, 'Angola': 2,
+        'Romania': 3, 'Mauritius': 3, 'Kenya': 2, 'Mongolia': 2, 'Laos': 2, 'Nepal': 2, 'Chile': 4, 'Turkey': 3,
+        'Qatar': 4, 'Jordan': 3, 'Puerto Rico': 4, 'Uruguay': 4, 'Algeria': 2, 'Portugal': 4, 'UNKNOWN': 8,
+        'Jersey': 4, 'Colombia': 3, 'Greece': 4, 'Yemen': 1, 'Slovenia': 4, 'Botswana': 3, 'Estonia': 4,
+        'Reunion Island': 3, 'Palestinian Territory': 2, 'Cyprus': 4, 'Papua New Guinea': 2,
+        'Fiji': 3, 'Azerbaijan': 3, 'Somalia': 1, 'French Guiana': 3, 'French Polynesia': 4,
+        'Tunisia': 2, 'Madagascar': 1, 'Iraq': 3, 'Northern Mariana Islands': 4, 'Gambia': 1,
+        'Guatemala': 3, 'Zambia': 2, 'Guam': 4, 'Senegal': 2, 'Kazakhstan': 3, "Cote D'ivoire": 2,
+        'Monaco': 4, 'Nigeria': 2, 'Curacao': 4, 'Malta': 4, 'Lithuania': 4, 'Bahamas': 4, 'Uzbekistan': 2,
+        'Zimbabwe': 2, 'Luxembourg': 4, 'Albania': 3, 'Ghana': 2, 'Bulgaria': 3, 'Costa Rica': 3,
+        'Mozambique': 1, 'Montenegro': 3, 'Maldives': 3, 'Guinea': 1,
+        'Sint Maarten (Netherlands)': 4, 'Central African Republic': 1,
+        'Democratic Republic of the\xa0Congo': 1, 'Uganda': 1, 'Kyrgyzstan': 2, 'Afghanistan': 1,
+        'Mali': 1, 'Lebanon': 3, 'Eswatini': 2, 'Faroe Islands': 4, 'Barbados': 4, 'Benin': 2,
+        'Venezuela': 1, 'Georgia': 3, 'South Sudan': 1, 'Gabon': 3, 'Aruba': 4, 'Latvia': 4,
+        'British Indian Ocean Territory': 4, 'Andorra': 4, 'Bhutan': 2, 'Togo': 1, 'Belarus': 3,
+        'New Caledonia': 4, 'Isle Of Man': 4, 'Burkina Faso': 1, 'Iceland': 4, 'Croatia': 4,
+        'Namibia': 3, 'Cameroon': 2, 'Trinidad & Tobago': 4, "Tanzania": 2, "Panama": 3}).fillna(8)
+
     full_data["guest_nationality_country_name_processed"] = full_data["guest_nationality_country_name"].map({
         'China': 7, 'South Africa': 6, 'South Korea': 7, 'Singapore': 7, 'Thailand': 7, 'Argentina': 4,
         'Taiwan': 7, 'Saudi Arabia': 2, 'Mexico': 3, 'Malaysia': 7, 'Germany': 0, 'New Zealand': 5,
@@ -194,13 +222,24 @@ def preprocessing(full_data, encoder=None):
         'Venezuela': 4, 'Georgia': 2, 'South Sudan': 6, 'Gabon': 6, 'Aruba': 4, 'Latvia': 0,
         'British Indian Ocean Territory': 7, 'Andorra': 0, 'Bhutan': 7, 'Togo': 6, 'Belarus': 0,
         'New Caledonia': 5, 'Isle Of Man': 0, 'Burkina Faso': 6, 'Iceland': 0, 'Croatia': 0,
-        'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4}).fillna(8)
+        'Namibia': 6, 'Cameroon': 6, 'Trinidad & Tobago': 4, "Tanzania": 6, "Panama": 3}).fillna(8)
+
+    # country_codes = pd.read_csv("countriesCodes.csv")
+    #
+    # indexes = []
+    # for country_code in full_data["guest_nationality_country_name"]:
+    #     indexes.append(country_codes[country_codes["Name"] == country_code].index.values)
+    #
+    # print(indexes)
+    # full_data["is_guest_local"] = (np.take(country_codes["Code"], indexes) == full_data["hotel_country_code"])
+    # print(full_data["is_guest_local"].value_counts())
 
     categoricals = [
         "guest_nationality_country_name_processed",
         "charge_option",
         "original_payment_type",
-        "accommadation_type_name"
+        "accommadation_type_name",
+        "guest_nationality_income"
     ]
     full_data = full_data.drop(
         [
@@ -473,8 +512,8 @@ if __name__ == '__main__':
     responses_all = pd.concat([responses, responses_prev], ignore_index=True)
     # testings(df, responses, encoder)  # TODO: Uncomment this to test
 
-    est = AgodaCancellationEstimator()
-    # est = AgodaCancellationEstimator(balanced=True)  #  TODO: decide if we want this or the new one?
+    # est = AgodaCancellationEstimator()
+    est = AgodaCancellationEstimator(balanced=True)  #  TODO: decide if we want this or the new one?
     #est.set_probs(0.6, 0.4, 0.7)
     est.fit(df_all, responses_all.astype(bool))
 
