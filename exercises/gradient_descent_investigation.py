@@ -46,12 +46,14 @@ def plot_descent_path(module: Type[BaseModule],
     fig = plot_descent_path(IMLearn.desent_methods.modules.L1, np.ndarray([[1,1],[0,0]]))
     fig.show()
     """
+
     def predict_(w):
         return np.array([module(weights=wi).compute_output() for wi in w])
 
     from utils import decision_surface
     return go.Figure([decision_surface(predict_, xrange=xrange, yrange=yrange, density=70, showscale=False),
-                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines", marker_color="black")],
+                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines",
+                                 marker_color="black")],
                      layout=go.Layout(xaxis=dict(range=xrange),
                                       yaxis=dict(range=yrange),
                                       title=f"GD Descent Path {title}"))
@@ -73,12 +75,53 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     weights: List[np.ndarray]
         Recorded parameters
     """
-    raise NotImplementedError()
+    gd_values = []
+    gd_weights = []
+
+    def callback(solver: GradientDescent,
+                 weights: np.ndarray,
+                 val: np.ndarray,
+                 grad: np.ndarray,
+                 t: int, eta: float, delta: float):
+        gd_values.append(val)
+        gd_weights.append(weights)
+
+    return callback, gd_values, gd_weights
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+    for mod, name in [(L1, "L1"), (L2, "L2")]:
+        lowest = []
+        for eta in etas:
+            module = mod(init)
+            callback, gd_values, gd_weights = get_gd_state_recorder_callback()
+            gd = GradientDescent(FixedLR(eta), callback=callback)
+            last = gd.fit(module, None, None)
+            fig = plot_descent_path(
+                mod,
+                np.array(gd_weights),
+                rf"$\textbf{{Q.3.1.1.1}}-\text{{Decent Path For {name} With }}\eta = {eta}$"
+            )
+            fig.write_image(f"./Plots/Ex6/DecentPathFor{name}WithEta{eta}.png")
+            fig = go.Figure(
+                data=[
+                    go.Scatter(
+                        x=list(range(len(gd_values))),
+                        y=gd_values,
+                        mode="markers+lines"
+                    )
+                ],
+                layout=go.Layout(
+                    title=rf"$\textbf{{Q.3.1.1.2}}-\text{{Convergence Rate of {name} With }}\eta = {eta}$",
+                    xaxis=dict(title=r"$\text{Iteration}$"),
+                    yaxis=dict(title=rf"$\text{{Norm {name}}}$")
+                )
+            )
+            fig.write_image(f"./Plots/Ex6/ConvergenceRateFor{name}WithEta{eta}.png")
+            lowest.append(np.min(gd_values))
+            print(f"{name} achieved lowest loss: {lowest[-1]}. for eta={eta}. iteration={len(gd_values)}")
+        print(f"{name} achieved lowest loss overall: {np.min(lowest)}")
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
