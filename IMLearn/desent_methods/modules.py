@@ -133,7 +133,7 @@ class LogisticModule(BaseModule):
         output: ndarray of shape (1,)
             Value of function at point self.weights
         """
-        x_w = np.einsum("bi,i->b", X, self.weights)
+        x_w = np.dot(X, self.weights)
         return -np.mean(y * x_w - np.log(1 + np.exp(x_w)))
 
     def compute_jacobian(self, X: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -153,8 +153,8 @@ class LogisticModule(BaseModule):
         output: ndarray of shape (n_features,)
             Derivative of function with respect to self.weights at point self.weights
         """
-        x_w = np.einsum("bi,i->b", X, self.weights)
-        return -np.mean((y - np.exp(x_w) / (1 + np.exp(x_w))) * x_w)
+        x_w = np.dot(X, self.weights)
+        return -np.mean(X * (y - (np.exp(x_w) / (1 + np.exp(x_w))))[:, None], axis=0)
 
 
 class RegularizedModule(BaseModule):

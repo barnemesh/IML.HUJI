@@ -122,17 +122,17 @@ class GradientDescent:
         """
         ret = [f.weights]
         if self.out_type_ == "best":
-            ret.append(f.compute_output())
+            ret.append(f.compute_output(X=X, y=y))
         for t in range(self.max_iter_):
             lr = self.learning_rate_.lr_step(t=t)
-            w_next = f.weights - lr * f.compute_jacobian()
+            w_next = f.weights - lr * f.compute_jacobian(X=X, y=y)
             delta = np.linalg.norm(w_next - f.weights)
             f.weights = w_next
-            val = f.compute_output()
+            val = f.compute_output(X=X, y=y)
             self.callback_(solver=self,
                            weights=f.weights,
                            val=val,
-                           grad=f.compute_jacobian(),
+                           grad=f.compute_jacobian(X=X, y=y),
                            t=t,
                            eta=lr,
                            delta=delta)
