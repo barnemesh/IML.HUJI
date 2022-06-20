@@ -129,7 +129,7 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
             fig.write_image(f"./Plots/Ex6/ConvergenceRateFor{name}WithEta{eta}.png", scale=2)
             mod_fig.add_trace(trace)
             lowest.append(np.min(gd_values))
-            print(f"{name} achieved lowest loss: {lowest[-1]}. for eta={eta}. iteration={len(gd_values)}")
+            print(f"For eta={eta}, {name} achieved lowest loss: {lowest[-1]}, in iteration={len(gd_values)}")
         print(f"{name} achieved lowest loss overall: {np.min(lowest)}")
         mod_fig.update_layout(
             title=rf"$\textbf{{Q.3.1.1.2}}-\text{{Convergence Rate of {name}}}$",
@@ -153,6 +153,7 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
     weights = dict()
     mod_fig = go.Figure()
+
     for gamma in reversed(gammas):
         module = L1(init)
         callback, gd_values, gd_weights = get_gd_state_recorder_callback()
@@ -183,6 +184,13 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
     )
     mod_fig.write_image(f"./Plots/Ex6/ExponentialConvergenceRateForL1LogScale.png", scale=2)
 
+    bests = []
+    for gamma in gammas:
+        bests.append(np.min(np.linalg.norm(np.array(weights[gamma]), ord=1, axis=1)))
+    best_i = np.argmin(bests)
+    print()
+    print(f"Exponential Rate L1 achieved lowest loss {bests[best_i]}, for gamma={gammas[best_i]}")
+    print()
     # Plot descent path for gamma=0.95
     callback, gd_values, gd_weights = get_gd_state_recorder_callback()
     gd = GradientDescent(ExponentialLR(eta, gammas[1]), callback=callback)
@@ -303,8 +311,8 @@ def fit_logistic_regression():
             if val_score < best_val:
                 best_val = val_score
                 best_l = l
-            print(f"{mod} :: For lambda {l}: train={train_score} : val={val_score}")
-        print(f"{mod} :: Best lambda={best_l} : val={best_val}")
+            # print(f"{mod} :: For lambda {l}: train={train_score} : val={val_score}")
+        print(f"{mod} :: Best lambda={best_l} : validation={best_val}")
         module = LogisticRegression(
             include_intercept=True,
             penalty=mod,
@@ -318,6 +326,6 @@ def fit_logistic_regression():
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # compare_fixed_learning_rates()
-    # compare_exponential_decay_rates()
+    compare_fixed_learning_rates()
+    compare_exponential_decay_rates()
     fit_logistic_regression()
