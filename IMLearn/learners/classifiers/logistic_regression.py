@@ -102,9 +102,10 @@ class LogisticRegression(BaseEstimator):
             )
         )
         if self.penalty_ in self._learners_dict:
-            lr = RegularizedModule(lr,
-                                   self._learners_dict[self.penalty_](),
+            lr = RegularizedModule(fidelity_module=lr,
+                                   regularization_module=self._learners_dict[self.penalty_](),
                                    lam=self.lam_,
+                                   weights=lr.weights,
                                    include_intercept=self.include_intercept_)
 
         self.coefs_ = self.solver_.fit(lr, X, y)
@@ -123,7 +124,7 @@ class LogisticRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.predict_proba(X) > self.alpha_
+        return self.predict_proba(X) >= self.alpha_
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
@@ -141,8 +142,10 @@ class LogisticRegression(BaseEstimator):
         """
         if self.include_intercept_:
             with_int = np.insert(X, 0, 1, axis=1)
-            return with_int @ self.coefs_
-        return X @ self.coefs_
+            pred = with_int @ self.coefs_
+        else:
+            pred = X @ self.coefs_
+        return 1 / (1 + np.exp(-pred))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

@@ -4,11 +4,14 @@ from typing import Tuple, List, Callable, Type
 
 from sklearn.metrics import roc_curve, auc
 
+import IMLearn.metrics
 from IMLearn import BaseModule
 from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
+from IMLearn.metrics import misclassification_error
 from IMLearn.utils import split_train_test
+from IMLearn.model_selection import cross_validate
 
 import plotly.graph_objects as go
 
@@ -247,7 +250,8 @@ def fit_logistic_regression():
                 y=[0, 1],
                 mode="lines",
                 line=dict(color="black", dash='dash'),
-                name="Random Class Assignment"
+                name="Random Class Assignment",
+                showlegend=False
             ),
             go.Scatter(
                 x=fpr,
@@ -264,11 +268,52 @@ def fit_logistic_regression():
             yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")
         )
     )
+    fig.update_xaxes(
+        constrain="domain"
+    ).update_yaxes(
+        constrain="domain",
+        scaleanchor="x",
+        scaleratio=1
+    )
     fig.write_image(f"./Plots/Ex6/ROCCurveLogisticRegressionOverTrain.png", scale=2)
+    best_alpha_i = np.argmax(tpr - fpr)
+    best_alpha = thresholds[best_alpha_i]
+    print("Logistic: ")
+    print(f"Best alpha: {best_alpha} at {best_alpha_i}")
+    score = misclassification_error(y_test.to_numpy(), module.predict_proba(X_test.to_numpy()) >= best_alpha)
+    print(f"score: {score}")
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
-    raise NotImplementedError()
+    lambdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+    for mod in ["l1", "l2"]:
+        best_l = 0
+        best_val = np.inf
+        for l in lambdas:
+            module = LogisticRegression(
+                include_intercept=True,
+                penalty=mod,
+                solver=GradientDescent(learning_rate=FixedLR(1e-4), max_iter=20000),
+                lam=l
+            )
+            train_score, val_score = cross_validate(module,
+                                                    X_train.to_numpy(),
+                                                    y_train.to_numpy(),
+                                                    misclassification_error)
+            if val_score < best_val:
+                best_val = val_score
+                best_l = l
+            print(f"{mod} :: For lambda {l}: train={train_score} : val={val_score}")
+        print(f"{mod} :: Best lambda={best_l} : val={best_val}")
+        module = LogisticRegression(
+            include_intercept=True,
+            penalty=mod,
+            solver=GradientDescent(learning_rate=FixedLR(1e-4), max_iter=20000),
+            lam=best_l
+        )
+        module.fit(X_train.to_numpy(), y_train.to_numpy())
+        test_error = misclassification_error(y_test.to_numpy(), module.predict(X_test.to_numpy()))
+        print(f"{mod} :: Test error={test_error}")
 
 
 if __name__ == '__main__':
